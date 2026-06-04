@@ -8,6 +8,7 @@ import {
   Dumbbell,
   Apple,
   Weight,
+  BarChart3,
   Target,
   Users,
   LogOut,
@@ -34,6 +35,7 @@ const navItems = [
   { label: "Ejercicios", href: "/ejercicios", icon: Dumbbell },
   { label: "Alimentos", href: "/alimentos", icon: Apple },
   { label: "Peso", href: "/peso", icon: Weight },
+  { label: "Estadisticas", href: "/estadisticas", icon: BarChart3 },
   { label: "Metas", href: "/metas", icon: Target },
   { label: "Usuarios", href: "/usuarios", icon: Users },
 ];

@@ -1,12 +1,17 @@
 import { apiFetch } from "./client";
 import type {
   DailySummary,
+  DailySummaryRangeResponse,
   DailyCorrection,
   UpsertCorrectionRequest,
 } from "@/lib/types/daily";
 
 export function getDailySummary(date: string): Promise<DailySummary> {
   return apiFetch<DailySummary>(`/daily/summary?date=${date}`);
+}
+
+export function getDailySummaryRange(from: string, to: string): Promise<DailySummaryRangeResponse> {
+  return apiFetch<DailySummaryRangeResponse>(`/daily/summary/range?from=${from}&to=${to}`);
 }
 
 export function getCorrection(date: string): Promise<DailyCorrection> {

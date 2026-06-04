@@ -10,6 +10,14 @@ export function useDailySummary(date: string) {
   });
 }
 
+export function useDailySummaryRange(from: string, to: string) {
+  return useQuery({
+    queryKey: ["daily", "summary", "range", from, to],
+    queryFn: () => dailyApi.getDailySummaryRange(from, to),
+    enabled: !!from && !!to,
+  });
+}
+
 export function useCorrection(date: string) {
   return useQuery({
     queryKey: ["daily", "corrections", date],

@@ -64,6 +64,10 @@ export interface DailyCorrection {
   notes: string;
 }
 
+export interface DailySummaryRangeResponse {
+  data: DailySummary[];
+}
+
 export interface UpsertCorrectionRequest {
   date: string;
   calories?: number;

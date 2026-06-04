@@ -5,6 +5,8 @@ import { format, subMonths } from "date-fns";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useWeightEntries, useDeleteWeightEntry } from "@/lib/hooks/use-weight";
+import { useGoals } from "@/lib/hooks/use-goals";
+import { WeightChart } from "@/components/charts/weight-chart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -24,6 +26,7 @@ export default function PesoPage() {
   const limit = 20;
 
   const { data, isLoading } = useWeightEntries({ from, to, limit, offset });
+  const { data: goals } = useGoals();
   const deleteMutation = useDeleteWeightEntry();
 
   function handleDelete(id: string) {
@@ -48,6 +51,15 @@ export default function PesoPage() {
         <span className="text-muted-foreground text-sm">a</span>
         <DatePicker value={to} onChange={(d) => { setTo(d); setOffset(0); }} />
       </div>
+
+      {data && data.items.length > 1 && (
+        <WeightChart
+          data={[...data.items]
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .map((e) => ({ date: e.date, weight_kg: e.weight_kg }))}
+          goalWeight={goals?.target_weight_kg}
+        />
+      )}
 
       {isLoading ? (
         <ListSkeleton count={5} />

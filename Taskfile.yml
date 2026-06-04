@@ -26,6 +26,14 @@ tasks:
     deps:
       - install
 
+  dev:lan:
+    desc: Inicia el servidor de desarrollo accesible en la red local
+    dotenv: [".env.local"]
+    cmds:
+      - npm run dev -- --hostname $DEV_HOST --port {{.PORT}}
+    deps:
+      - install
+
   build:
     desc: Genera el build de produccion
     cmds:
