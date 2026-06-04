@@ -1,0 +1,84 @@
+version: "3"
+
+vars:
+  PORT: "3000"
+
+tasks:
+  default:
+    desc: Muestra las tareas disponibles
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias del proyecto
+    cmds:
+      - npm install
+    sources:
+      - package.json
+    generates:
+      - node_modules/.package-lock.json
+
+  dev:
+    desc: Inicia el servidor de desarrollo
+    dotenv: [".env.local"]
+    cmds:
+      - npm run dev -- --port {{.PORT}}
+    deps:
+      - install
+
+  build:
+    desc: Genera el build de produccion
+    cmds:
+      - npm run build
+    deps:
+      - install
+
+  start:
+    desc: Inicia el servidor de produccion
+    dotenv: [".env.local"]
+    cmds:
+      - npm run start -- --port {{.PORT}}
+    deps:
+      - build
+
+  lint:
+    desc: Ejecuta el linter (ESLint)
+    cmds:
+      - npm run lint
+    deps:
+      - install
+
+  lint:fix:
+    desc: Ejecuta el linter y corrige errores automaticamente
+    cmds:
+      - npx eslint --fix
+    deps:
+      - install
+
+  typecheck:
+    desc: Verifica los tipos de TypeScript
+    cmds:
+      - npx tsc --noEmit
+    deps:
+      - install
+
+  check:
+    desc: Ejecuta lint y typecheck juntos
+    cmds:
+      - task: lint
+      - task: typecheck
+
+  clean:
+    desc: Limpia archivos generados (.next, node_modules)
+    cmds:
+      - rm -rf .next node_modules
+
+  clean:build:
+    desc: Limpia solo el directorio .next
+    cmds:
+      - rm -rf .next
+
+  shadcn:
+    desc: "Agrega un componente de shadcn/ui (uso: task shadcn -- button)"
+    cmds:
+      - npx shadcn@latest add {{.CLI_ARGS}}
