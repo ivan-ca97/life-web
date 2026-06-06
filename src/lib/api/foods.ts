@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, userFetch } from "./client";
 import type {
   Food,
   FoodPage,
@@ -11,7 +11,7 @@ import type {
 } from "@/lib/types/food";
 
 export function createFood(data: CreateFoodRequest): Promise<Food> {
-  return apiFetch<Food>("/foods", {
+  return userFetch<Food>("/foods", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -28,22 +28,22 @@ export function getFoods(params: {
   if (params.tag) search.set("tag", params.tag);
   if (params.limit) search.set("limit", String(params.limit));
   if (params.offset) search.set("offset", String(params.offset));
-  return apiFetch<FoodPage>(`/foods?${search}`);
+  return userFetch<FoodPage>(`/foods?${search}`);
 }
 
 export function getFood(id: string): Promise<Food> {
-  return apiFetch<Food>(`/foods/${id}`);
+  return userFetch<Food>(`/foods/${id}`);
 }
 
 export function updateFood(id: string, data: UpdateFoodRequest): Promise<Food> {
-  return apiFetch<Food>(`/foods/${id}`, {
+  return userFetch<Food>(`/foods/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteFood(id: string): Promise<void> {
-  return apiFetch<void>(`/foods/${id}`, { method: "DELETE" });
+  return userFetch<void>(`/foods/${id}`, { method: "DELETE" });
 }
 
 export function getFoodFrequency(params: {
@@ -55,7 +55,7 @@ export function getFoodFrequency(params: {
   if (params.from) search.set("from", params.from);
   if (params.to) search.set("to", params.to);
   if (params.tag) search.set("tag", params.tag);
-  return apiFetch<FoodFrequencyResponse>(`/foods/frequency?${search}`);
+  return userFetch<FoodFrequencyResponse>(`/foods/frequency?${search}`);
 }
 
 export function getIngredients(params: {
@@ -63,9 +63,10 @@ export function getIngredients(params: {
 }): Promise<IngredientsListResponse> {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
-  return apiFetch<IngredientsListResponse>(`/foods/ingredients?${search}`);
+  return userFetch<IngredientsListResponse>(`/foods/ingredients?${search}`);
 }
 
+/** Global route — no userId prefix */
 export function getUnits(): Promise<UnitsListResponse> {
   return apiFetch<UnitsListResponse>("/foods/units");
 }
@@ -77,5 +78,23 @@ export function getIngredientFrequency(params: {
   const search = new URLSearchParams();
   search.set("from", params.from);
   search.set("to", params.to);
-  return apiFetch<IngredientFrequencyResponse>(`/foods/ingredients/frequency?${search}`);
+  return userFetch<IngredientFrequencyResponse>(`/foods/ingredients/frequency?${search}`);
+}
+
+/** Global route — browse public foods */
+export function getCommunityFoods(params: {
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<FoodPage> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.offset) search.set("offset", String(params.offset));
+  return apiFetch<FoodPage>(`/foods/community?${search}`);
+}
+
+/** Copy a food to the current user's collection */
+export function copyFood(id: string): Promise<Food> {
+  return userFetch<Food>(`/foods/${id}/copy`, { method: "POST" });
 }

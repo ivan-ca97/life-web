@@ -14,7 +14,8 @@ import type { DailySummary } from "@/lib/types/daily";
 
 const chartConfig = {
   consumed: { label: "Consumidas", color: "oklch(0.75 0.18 55)" },
-  burned: { label: "Quemadas", color: "oklch(0.55 0.15 160)" },
+  burned: { label: "Gasto total", color: "oklch(0.55 0.15 160)" },
+  bmr: { label: "Metabolismo basal", color: "oklch(0.6 0.08 260)" },
 } satisfies ChartConfig;
 
 interface CalorieChartProps {
@@ -23,10 +24,15 @@ interface CalorieChartProps {
 }
 
 export function CalorieChart({ data, goalCalories }: CalorieChartProps) {
-  const chartData = data.map((s) => ({
+  const relevant = data.filter(
+    (s) => s.meals.total_calories > 0 || s.exercise.total_calories_burned > 0,
+  );
+  const hasBmr = relevant.some((s) => s.estimated_bmr != null);
+  const chartData = relevant.map((s) => ({
     date: s.date,
     consumed: Math.round(s.meals.total_calories),
-    burned: Math.round(s.exercise.total_calories_burned),
+    burned: Math.round(s.exercise.total_calories_burned + (s.estimated_bmr ?? 0)),
+    ...(s.estimated_bmr != null ? { bmr: Math.round(s.estimated_bmr) } : {}),
   }));
 
   return (
@@ -43,7 +49,7 @@ export function CalorieChart({ data, goalCalories }: CalorieChartProps) {
               tickFormatter={(v) => v.slice(5)}
               tick={{ fontSize: 12 }}
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis domain={["auto", "auto"]} tick={{ fontSize: 12 }} />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
             <Line
@@ -60,6 +66,17 @@ export function CalorieChart({ data, goalCalories }: CalorieChartProps) {
               strokeWidth={2}
               dot={false}
             />
+            {hasBmr && (
+              <Line
+                type="monotone"
+                dataKey="bmr"
+                stroke="var(--color-bmr)"
+                strokeWidth={1.5}
+                strokeOpacity={0.5}
+                strokeDasharray="6 3"
+                dot={false}
+              />
+            )}
             {goalCalories != null && (
               <ReferenceLine
                 y={goalCalories}

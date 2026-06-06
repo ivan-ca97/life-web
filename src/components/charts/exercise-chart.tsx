@@ -20,10 +20,12 @@ interface ExerciseChartProps {
 }
 
 export function ExerciseChart({ data, goalSteps }: ExerciseChartProps) {
-  const chartData = data.map((s) => ({
-    date: s.date,
-    steps: s.exercise.total_steps,
-  }));
+  const chartData = data
+    .filter((s) => s.exercise.total_steps > 0 || s.exercise.total_calories_burned > 0)
+    .map((s) => ({
+      date: s.date,
+      steps: s.exercise.total_steps,
+    }));
 
   return (
     <Card>

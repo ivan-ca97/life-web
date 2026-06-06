@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ interface FoodSearchComboboxProps {
 export function FoodSearchCombobox({ onSelect, excludeIds = [] }: FoodSearchComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { data } = useFoods({ q: search, limit: 20 });
+  const { data, isFetching } = useFoods({ q: search, limit: 20 });
 
   const foods = (data?.items ?? []).filter((f) => !excludeIds.includes(f.id));
 
@@ -47,7 +47,16 @@ export function FoodSearchCombobox({ onSelect, excludeIds = [] }: FoodSearchComb
             onValueChange={setSearch}
           />
           <CommandList>
-            <CommandEmpty>Sin resultados</CommandEmpty>
+            <CommandEmpty>
+              {isFetching ? (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Buscando...</span>
+                </div>
+              ) : (
+                "Sin resultados"
+              )}
+            </CommandEmpty>
             <CommandGroup>
               {foods.map((food) => (
                 <CommandItem

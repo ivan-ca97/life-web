@@ -5,5 +5,27 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
+  user_id: string;
+  expires_at: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  token: string;
+  user_id: string;
+  expires_at: string;
+}
+
+export interface GoogleLoginRequest {
+  id_token: string;
+}
+
+export interface GoogleLoginResponse {
+  token: string;
+  user_id: string;
   expires_at: string;
 }

@@ -17,16 +17,9 @@ interface DateRangeSelectorProps {
 }
 
 export function DateRangeSelector({ from, to, onChange }: DateRangeSelectorProps) {
-  const today = format(new Date(), "yyyy-MM-dd");
-
-  function activeDays(): number | null {
-    if (to !== today) return null;
-    const diffMs = new Date(to).getTime() - new Date(from).getTime();
-    const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
-    return presets.some((p) => p.days === days) ? days : null;
-  }
-
-  const active = activeDays();
+  const diffMs = new Date(to).getTime() - new Date(from).getTime();
+  const activeDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  const active = presets.some((p) => p.days === activeDays) ? activeDays : null;
 
   return (
     <div className="flex gap-2">
@@ -36,7 +29,7 @@ export function DateRangeSelector({ from, to, onChange }: DateRangeSelectorProps
           variant={active === p.days ? "default" : "outline"}
           size="sm"
           onClick={() =>
-            onChange(format(subDays(new Date(), p.days), "yyyy-MM-dd"), today)
+            onChange(format(subDays(new Date(to), p.days), "yyyy-MM-dd"), to)
           }
         >
           {p.label}

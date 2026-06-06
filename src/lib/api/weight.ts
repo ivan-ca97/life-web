@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { userFetch } from "./client";
 import type {
   WeightEntry,
   WeightPage,
@@ -17,15 +17,15 @@ export function getWeightEntries(params: {
   search.set("to", params.to);
   if (params.limit) search.set("limit", String(params.limit));
   if (params.offset) search.set("offset", String(params.offset));
-  return apiFetch<WeightPage>(`/weight?${search}`);
+  return userFetch<WeightPage>(`/weight?${search}`);
 }
 
 export function getWeightEntry(id: string): Promise<WeightEntry> {
-  return apiFetch<WeightEntry>(`/weight/${id}`);
+  return userFetch<WeightEntry>(`/weight/${id}`);
 }
 
 export function createWeightEntry(data: CreateWeightRequest): Promise<WeightEntry> {
-  return apiFetch<WeightEntry>("/weight", {
+  return userFetch<WeightEntry>("/weight", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -35,12 +35,12 @@ export function updateWeightEntry(
   id: string,
   data: UpdateWeightRequest
 ): Promise<WeightEntry> {
-  return apiFetch<WeightEntry>(`/weight/${id}`, {
+  return userFetch<WeightEntry>(`/weight/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteWeightEntry(id: string): Promise<void> {
-  return apiFetch<void>(`/weight/${id}`, { method: "DELETE" });
+  return userFetch<void>(`/weight/${id}`, { method: "DELETE" });
 }

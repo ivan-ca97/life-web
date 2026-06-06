@@ -18,44 +18,60 @@ const chartConfig = {
   fat: { label: "Grasa", color: "oklch(0.65 0.20 15)" },
 } satisfies ChartConfig;
 
-interface MacroChartProps {
+interface MacroPercentChartProps {
   data: DailySummary[];
 }
 
-export function MacroChart({ data }: MacroChartProps) {
+export function MacroPercentChart({ data }: MacroPercentChartProps) {
   const chartData = data
     .filter((s) => s.meals.total_calories > 0)
-    .map((s) => ({
-      date: s.date,
-      protein: Math.round(s.meals.total_protein_grams),
-      carbs: Math.round(s.meals.total_carbs_grams),
-      fat: Math.round(s.meals.total_fat_grams),
-    }));
+    .map((s) => {
+      const p = s.meals.total_protein_grams;
+      const c = s.meals.total_carbs_grams;
+      const f = s.meals.total_fat_grams;
+      const total = p + c + f;
+      if (total === 0) return { date: s.date, protein: 0, carbs: 0, fat: 0 };
+      return {
+        date: s.date,
+        protein: Math.round((p / total) * 100),
+        carbs: Math.round((c / total) * 100),
+        fat: Math.round((f / total) * 100),
+      };
+    });
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Macronutrientes</CardTitle>
+        <CardTitle className="text-base">Distribucion de macros (%)</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <AreaChart data={chartData} accessibilityLayer>
+        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+          <AreaChart data={chartData} accessibilityLayer stackOffset="expand">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="date"
               tickFormatter={(v) => v.slice(5)}
               tick={{ fontSize: 12 }}
             />
-            <YAxis tick={{ fontSize: 12 }} unit="g" />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <YAxis
+              tickFormatter={(v) => `${Math.round(v * 100)}%`}
+              tick={{ fontSize: 12 }}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={(value) => `${value}%`}
+                />
+              }
+            />
             <ChartLegend content={<ChartLegendContent />} />
             <Area
               type="monotone"
-              dataKey="fat"
+              dataKey="protein"
               stackId="1"
-              stroke="var(--color-fat)"
-              fill="var(--color-fat)"
-              fillOpacity={0.4}
+              stroke="var(--color-protein)"
+              fill="var(--color-protein)"
+              fillOpacity={0.8}
             />
             <Area
               type="monotone"
@@ -63,15 +79,15 @@ export function MacroChart({ data }: MacroChartProps) {
               stackId="1"
               stroke="var(--color-carbs)"
               fill="var(--color-carbs)"
-              fillOpacity={0.4}
+              fillOpacity={0.8}
             />
             <Area
               type="monotone"
-              dataKey="protein"
+              dataKey="fat"
               stackId="1"
-              stroke="var(--color-protein)"
-              fill="var(--color-protein)"
-              fillOpacity={0.4}
+              stroke="var(--color-fat)"
+              fill="var(--color-fat)"
+              fillOpacity={0.8}
             />
           </AreaChart>
         </ChartContainer>

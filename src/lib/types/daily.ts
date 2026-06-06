@@ -37,6 +37,8 @@ export interface DailySummary {
   exercise: ExerciseSummary;
   weight?: WeightSummary;
   goals?: GoalsSummary;
+  estimated_bmr?: number;
+  caloric_balance?: number;
 }
 
 export type CorrectionField =

@@ -23,6 +23,7 @@ export interface Ingredient {
 
 export interface Food {
   id: string;
+  user_id: string;
   name: string;
   measurement_type: MeasurementType;
   base_quantity: number;
@@ -32,6 +33,7 @@ export interface Food {
   default_carbs_grams?: number;
   default_fat_grams?: number;
   default_fiber_grams?: number;
+  public: boolean;
   conversions: FoodConversion[];
   tags: string[];
   ingredients: Ingredient[];
@@ -51,6 +53,7 @@ export interface CreateFoodRequest {
   default_carbs_grams?: number;
   default_fat_grams?: number;
   default_fiber_grams?: number;
+  public?: boolean;
   conversions?: FoodConversionRequest[];
   tags?: string[];
   ingredients?: string[];

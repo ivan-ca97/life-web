@@ -14,6 +14,9 @@ import {
   Plus,
   Weight,
   Target,
+  Activity,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { useDailySummary, useCorrection } from "@/lib/hooks/use-daily-summary";
 import { fmtDuration } from "@/lib/format";
@@ -248,14 +251,59 @@ export default function ResumenPage() {
             </CardContent>
           </Card>
 
-          {data.meals.total_calories > 0 && data.exercise.total_calories_burned > 0 && (
+          {(data.estimated_bmr != null || data.caloric_balance != null) && (
             <Card>
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">Balance calorico neto</p>
-                <p className="text-3xl font-semibold tabular-nums">
-                  {(data.meals.total_calories - data.exercise.total_calories_burned).toFixed(0)}
-                  <span className="text-sm font-normal text-muted-foreground ml-1">kcal</span>
-                </p>
+              <CardHeader>
+                <CardTitle className="text-base">Metabolismo y balance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {data.estimated_bmr != null && (
+                    <SummaryCard
+                      icon={<Activity className="size-5" />}
+                      label="Metabolismo basal"
+                      value={data.estimated_bmr.toFixed(0)}
+                      unit="kcal"
+                    />
+                  )}
+                  {data.caloric_balance != null && (() => {
+                    const surplus = data.caloric_balance >= 0;
+                    return (
+                      <Card>
+                        <CardContent className="flex items-center gap-3 p-4">
+                          <div className={surplus ? "text-amber-500" : "text-sky-500"}>
+                            {surplus
+                              ? <TrendingUp className="size-5" />
+                              : <TrendingDown className="size-5" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-muted-foreground">Balance calorico</p>
+                            <p className="text-2xl font-semibold tabular-nums">
+                              {Math.abs(data.caloric_balance).toFixed(0)}
+                              <span className="text-sm font-normal text-muted-foreground ml-1">kcal</span>
+                            </p>
+                            <p className={`text-xs font-medium ${surplus ? "text-amber-500" : "text-sky-500"}`}>
+                              {surplus ? "Superavit" : "Deficit"}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+                  {data.estimated_bmr != null && (
+                    <SummaryCard
+                      icon={<Flame className="size-5" />}
+                      label="Gasto total"
+                      value={(data.estimated_bmr + data.exercise.total_calories_burned).toFixed(0)}
+                      unit="kcal"
+                    />
+                  )}
+                </div>
+                {data.caloric_balance != null && data.estimated_bmr != null && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Balance = consumidas ({data.meals.total_calories.toFixed(0)}) − BMR ({data.estimated_bmr.toFixed(0)}) − ejercicio ({data.exercise.total_calories_burned.toFixed(0)})
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

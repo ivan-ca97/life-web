@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { userFetch } from "./client";
 import type {
   DailySummary,
   DailySummaryRangeResponse,
@@ -7,24 +7,24 @@ import type {
 } from "@/lib/types/daily";
 
 export function getDailySummary(date: string): Promise<DailySummary> {
-  return apiFetch<DailySummary>(`/daily/summary?date=${date}`);
+  return userFetch<DailySummary>(`/daily/summary?date=${date}`);
 }
 
 export function getDailySummaryRange(from: string, to: string): Promise<DailySummaryRangeResponse> {
-  return apiFetch<DailySummaryRangeResponse>(`/daily/summary/range?from=${from}&to=${to}`);
+  return userFetch<DailySummaryRangeResponse>(`/daily/summary/range?from=${from}&to=${to}`);
 }
 
 export function getCorrection(date: string): Promise<DailyCorrection> {
-  return apiFetch<DailyCorrection>(`/daily/corrections?date=${date}`);
+  return userFetch<DailyCorrection>(`/daily/corrections?date=${date}`);
 }
 
 export function upsertCorrection(data: UpsertCorrectionRequest): Promise<DailyCorrection> {
-  return apiFetch<DailyCorrection>("/daily/corrections", {
+  return userFetch<DailyCorrection>("/daily/corrections", {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteCorrections(date: string): Promise<void> {
-  return apiFetch<void>(`/daily/corrections?date=${date}`, { method: "DELETE" });
+  return userFetch<void>(`/daily/corrections?date=${date}`, { method: "DELETE" });
 }

@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { userFetch } from "./client";
 import type {
   Meal,
   MealPage,
@@ -10,7 +10,7 @@ import type {
 } from "@/lib/types/meal";
 
 export function createMeal(data: CreateMealRequest): Promise<Meal> {
-  return apiFetch<Meal>("/meals", {
+  return userFetch<Meal>("/meals", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -25,31 +25,31 @@ export function getMeals(params: {
   if (params.date) search.set("date", params.date);
   if (params.limit) search.set("limit", String(params.limit));
   if (params.offset) search.set("offset", String(params.offset));
-  return apiFetch<MealPage>(`/meals?${search}`);
+  return userFetch<MealPage>(`/meals?${search}`);
 }
 
 export function getMeal(id: string): Promise<Meal> {
-  return apiFetch<Meal>(`/meals/${id}`);
+  return userFetch<Meal>(`/meals/${id}`);
 }
 
 export function updateMeal(id: string, data: UpdateMealRequest): Promise<Meal> {
-  return apiFetch<Meal>(`/meals/${id}`, {
+  return userFetch<Meal>(`/meals/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export function deleteMeal(id: string): Promise<void> {
-  return apiFetch<void>(`/meals/${id}`, { method: "DELETE" });
+  return userFetch<void>(`/meals/${id}`, { method: "DELETE" });
 }
 
 export function getMealTypes(hour?: number): Promise<MealTypesResponse> {
   const search = hour !== undefined ? `?hour=${hour}` : "";
-  return apiFetch<MealTypesResponse>(`/meals/types${search}`);
+  return userFetch<MealTypesResponse>(`/meals/types${search}`);
 }
 
 export function previewMealMacros(data: MealPreviewRequest): Promise<MealPreviewResponse> {
-  return apiFetch<MealPreviewResponse>("/meals/preview", {
+  return userFetch<MealPreviewResponse>("/meals/preview", {
     method: "POST",
     body: JSON.stringify(data),
   });

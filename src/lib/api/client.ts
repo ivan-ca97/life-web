@@ -25,6 +25,22 @@ export function clearToken(): void {
   document.cookie = "life_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
 }
 
+export function getUserId(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|; )life_user_id=([^;]*)/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
+}
+
+export function setUserId(userId: string, expiresAt: string): void {
+  const expires = new Date(expiresAt).toUTCString();
+  document.cookie = `life_user_id=${encodeURIComponent(userId)}; expires=${expires}; path=/`;
+}
+
+export function clearUserId(): void {
+  document.cookie = "life_user_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
@@ -44,6 +60,7 @@ export async function apiFetch<T>(
 
   if (response.status === 401) {
     clearToken();
+    clearUserId();
     window.location.href = "/login";
     throw new ApiError(401, "No autorizado");
   }
@@ -58,4 +75,18 @@ export async function apiFetch<T>(
   }
 
   return response.json();
+}
+
+/** Fetch scoped to /users/{userId}. Redirects to login if no userId. */
+export async function userFetch<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const userId = getUserId();
+  if (!userId) {
+    clearToken();
+    window.location.href = "/login";
+    throw new ApiError(401, "No autorizado");
+  }
+  return apiFetch<T>(`/users/${userId}${path}`, options);
 }

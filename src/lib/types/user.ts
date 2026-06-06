@@ -4,6 +4,9 @@ export interface User {
   id: string;
   email: string;
   active: boolean;
+  height_cm?: number;
+  birth_date?: string;
+  sex?: string;
   created_at: string;
 }
 
@@ -17,4 +20,7 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   email?: string;
   password?: string;
+  height_cm?: number;
+  birth_date?: string;
+  sex?: string;
 }
