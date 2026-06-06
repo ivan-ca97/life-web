@@ -17,6 +17,7 @@ const MEASUREMENT_LABELS: Record<string, string> = {
 interface DraggableFoodRowProps {
   food: Food;
   isInBuilder: boolean;
+  disableDrag?: boolean;
   onAddToBuilder: (food: Food) => void;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
@@ -26,6 +27,7 @@ interface DraggableFoodRowProps {
 export function DraggableFoodRow({
   food,
   isInBuilder,
+  disableDrag,
   onAddToBuilder,
   onView,
   onEdit,
@@ -34,16 +36,16 @@ export function DraggableFoodRow({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: food.id,
     data: { food },
+    disabled: disableDrag,
   });
 
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className={`flex items-center gap-4 px-4 py-3 touch-none ${
-        isDragging ? "opacity-30" : isInBuilder ? "opacity-50" : ""
-      }`}
+      {...(disableDrag ? {} : { ...attributes, ...listeners })}
+      className={`flex items-center gap-4 px-4 py-3 ${
+        disableDrag ? "" : "touch-none"
+      } ${isDragging ? "opacity-30" : isInBuilder ? "opacity-50" : ""}`}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

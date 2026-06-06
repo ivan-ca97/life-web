@@ -139,6 +139,7 @@ export default function AlimentosPage() {
                   key={food.id}
                   food={food}
                   isInBuilder={builder.foodIdsInBuilder.has(food.id)}
+                  disableDrag={!!isMobile}
                   onAddToBuilder={handleAddToBuilder}
                   onView={(id) => setViewingFoodId(id)}
                   onEdit={(id) => {
@@ -164,15 +165,15 @@ export default function AlimentosPage() {
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-6">
-        {/* Builder panel - desktop: left column */}
+        {/* Food list - main content stays in place */}
+        {foodList}
+
+        {/* Builder panel - desktop: right sidebar */}
         {builder.open && !isMobile && (
           <div className="w-[380px] shrink-0 sticky top-0 self-start max-h-[calc(100vh-3.5rem-3rem)] overflow-y-auto">
             {builderPanel}
           </div>
         )}
-
-        {/* Food list - takes remaining space */}
-        {foodList}
       </div>
 
       {/* Drag overlay */}

@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -32,13 +31,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setTokenState] = useState<string | null>(null);
-  const [userIdState, setUserIdState] = useState<string | null>(null);
-
-  useEffect(() => {
-    setTokenState(getToken());
-    setUserIdState(getUserId());
-  }, []);
+  const [token, setTokenState] = useState<string | null>(() => getToken());
+  const [userIdState, setUserIdState] = useState<string | null>(() => getUserId());
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
