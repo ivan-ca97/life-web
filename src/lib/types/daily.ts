@@ -33,12 +33,18 @@ export interface GoalsSummary {
 
 export interface DailySummary {
   date: string;
+  closed: boolean;
   meals: MealsSummary;
   exercise: ExerciseSummary;
   weight?: WeightSummary;
   goals?: GoalsSummary;
   estimated_bmr?: number;
   caloric_balance?: number;
+}
+
+export interface DayClosureResponse {
+  date: string;
+  closed: boolean;
 }
 
 export type CorrectionField =

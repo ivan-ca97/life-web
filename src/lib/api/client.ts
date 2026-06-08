@@ -41,6 +41,14 @@ export function clearUserId(): void {
   document.cookie = "life_user_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
 }
 
+const ERROR_TRANSLATIONS: Record<string, string> = {
+  "day is closed": "El dia esta cerrado",
+};
+
+function translateError(msg: string): string {
+  return ERROR_TRANSLATIONS[msg.toLowerCase()] ?? msg;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
@@ -71,7 +79,7 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: "Error desconocido" }));
-    throw new ApiError(response.status, body.error);
+    throw new ApiError(response.status, translateError(body.error));
   }
 
   return response.json();

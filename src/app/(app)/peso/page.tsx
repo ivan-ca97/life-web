@@ -4,7 +4,9 @@ import { useState } from "react";
 import { format, subMonths } from "date-fns";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDate } from "@/lib/date/context";
 import { useWeightEntries, useDeleteWeightEntry } from "@/lib/hooks/use-weight";
+import { useDailySummary } from "@/lib/hooks/use-daily-summary";
 import { useGoals } from "@/lib/hooks/use-goals";
 import { WeightChart } from "@/components/charts/weight-chart";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,8 @@ import { WeightFormSheet } from "@/components/weight-form-sheet";
 import { DatePicker } from "@/components/date-picker";
 
 export default function PesoPage() {
+  const { date: currentDate } = useDate();
+  const { data: daySummary } = useDailySummary(currentDate);
   const today = format(new Date(), "yyyy-MM-dd");
   const [from, setFrom] = useState(format(subMonths(new Date(), 3), "yyyy-MM-dd"));
   const [to, setTo] = useState(today);
@@ -40,10 +44,12 @@ export default function PesoPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Peso</h1>
-        <Button onClick={() => setSheetOpen(true)}>
-          <Plus className="size-4 mr-1" />
-          Nuevo
-        </Button>
+        {!daySummary?.closed && (
+          <Button onClick={() => setSheetOpen(true)}>
+            <Plus className="size-4 mr-1" />
+            Nuevo
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-2 items-center">
@@ -90,29 +96,31 @@ export default function PesoPage() {
                       {entry.notes && ` — ${entry.notes}`}
                     </p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => {
-                        setEditingId(entry.id);
-                        setSheetOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="ghost" size="icon-sm">
-                          <Trash2 className="size-4" />
-                        </Button>
-                      }
-                      title="Eliminar registro"
-                      description="Se eliminara este registro de peso permanentemente."
-                      onConfirm={() => handleDelete(entry.id)}
-                      destructive
-                    />
-                  </div>
+                  {!daySummary?.closed && (
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setEditingId(entry.id);
+                          setSheetOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="ghost" size="icon-sm">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        }
+                        title="Eliminar registro"
+                        description="Se eliminara este registro de peso permanentemente."
+                        onConfirm={() => handleDelete(entry.id)}
+                        destructive
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>

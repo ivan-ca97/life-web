@@ -112,7 +112,7 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       default_fat_grams: defaultValues?.default_fat_grams?.toString() ?? "",
       default_fiber_grams: defaultValues?.default_fiber_grams?.toString() ?? "",
       base_quantity: defaultValues?.base_quantity?.toString() ?? "",
-      base_unit: defaultValues?.base_unit ?? "",
+      base_unit: defaultValues?.base_unit ?? "g",
     },
   });
 
@@ -223,7 +223,8 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
             const currentUnit = watch("base_unit");
             const units = UNITS_BY_DIMENSION[mt];
             if (!currentUnit || !units.includes(currentUnit)) {
-              setValue("base_unit", units.length === 1 ? units[0] : "");
+              const defaultUnit = mt === "mass" ? "g" : mt === "volume" ? "ml" : "u";
+              setValue("base_unit", defaultUnit);
             }
             if (mt === "unit" && !watch("base_quantity")) {
               setValue("base_quantity", "1");

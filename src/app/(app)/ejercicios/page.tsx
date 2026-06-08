@@ -6,6 +6,7 @@ import { useDate } from "@/lib/date/context";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useExercises, useDeleteExercise } from "@/lib/hooks/use-exercises";
+import { useDailySummary } from "@/lib/hooks/use-daily-summary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export default function EjerciciosPage() {
   const limit = 20;
 
   const { data, isLoading } = useExercises({ date, limit, offset });
+  const { data: summary } = useDailySummary(date);
   const deleteMutation = useDeleteExercise();
 
   function handleDelete(id: string) {
@@ -47,10 +49,12 @@ export default function EjerciciosPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Ejercicios</h1>
-        <Button onClick={() => setSheetOpen(true)}>
-          <Plus className="size-4 mr-1" />
-          Nuevo
-        </Button>
+        {!summary?.closed && (
+          <Button onClick={() => setSheetOpen(true)}>
+            <Plus className="size-4 mr-1" />
+            Nuevo
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -107,20 +111,24 @@ export default function EjerciciosPage() {
                     <Button variant="ghost" size="icon" render={<Link href={`/ejercicios/${exercise.id}`} />}>
                         <Eye className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" render={<Link href={`/ejercicios/${exercise.id}/editar`} />}>
-                        <Pencil className="size-4" />
-                    </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="size-4" />
+                    {!summary?.closed && (
+                      <>
+                        <Button variant="ghost" size="icon" render={<Link href={`/ejercicios/${exercise.id}/editar`} />}>
+                            <Pencil className="size-4" />
                         </Button>
-                      }
-                      title="Eliminar ejercicio"
-                      description={`Se eliminara "${exercise.name}" permanentemente.`}
-                      onConfirm={() => handleDelete(exercise.id)}
-                      destructive
-                    />
+                        <ConfirmDialog
+                          trigger={
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="size-4" />
+                            </Button>
+                          }
+                          title="Eliminar ejercicio"
+                          description={`Se eliminara "${exercise.name}" permanentemente.`}
+                          onConfirm={() => handleDelete(exercise.id)}
+                          destructive
+                        />
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

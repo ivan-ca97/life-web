@@ -4,6 +4,7 @@ import type {
   DailySummaryRangeResponse,
   DailyCorrection,
   UpsertCorrectionRequest,
+  DayClosureResponse,
 } from "@/lib/types/daily";
 
 export function getDailySummary(date: string): Promise<DailySummary> {
@@ -27,4 +28,15 @@ export function upsertCorrection(data: UpsertCorrectionRequest): Promise<DailyCo
 
 export function deleteCorrections(date: string): Promise<void> {
   return userFetch<void>(`/daily/corrections?date=${date}`, { method: "DELETE" });
+}
+
+export function closeDay(date: string): Promise<DayClosureResponse> {
+  return userFetch<DayClosureResponse>("/daily/closure", {
+    method: "PUT",
+    body: JSON.stringify({ date }),
+  });
+}
+
+export function openDay(date: string): Promise<void> {
+  return userFetch<void>(`/daily/closure?date=${date}`, { method: "DELETE" });
 }

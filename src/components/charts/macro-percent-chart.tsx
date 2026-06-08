@@ -58,11 +58,7 @@ export function MacroPercentChart({ data }: MacroPercentChartProps) {
               tick={{ fontSize: 12 }}
             />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => `${value}%`}
-                />
-              }
+              content={<ChartTooltipContent />}
             />
             <ChartLegend content={<ChartLegendContent />} />
             <Area

@@ -47,3 +47,25 @@ export function useDeleteCorrections(date: string) {
     },
   });
 }
+
+export function useCloseDay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (date: string) => dailyApi.closeDay(date),
+    onSuccess: (_data, date) => {
+      queryClient.invalidateQueries({ queryKey: ["daily", "summary", date] });
+      queryClient.invalidateQueries({ queryKey: ["daily", "summary", "range"] });
+    },
+  });
+}
+
+export function useOpenDay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (date: string) => dailyApi.openDay(date),
+    onSuccess: (_data, date) => {
+      queryClient.invalidateQueries({ queryKey: ["daily", "summary", date] });
+      queryClient.invalidateQueries({ queryKey: ["daily", "summary", "range"] });
+    },
+  });
+}

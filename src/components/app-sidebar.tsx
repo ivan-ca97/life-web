@@ -10,6 +10,7 @@ import {
   Weight,
   BarChart3,
   Target,
+  CalendarDays,
   Users,
   LogOut,
   Moon,
@@ -31,6 +32,7 @@ import { useAuth } from "@/lib/auth/context";
 
 const navItems = [
   { label: "Resumen", href: "/resumen", icon: LayoutDashboard },
+  { label: "Calendario", href: "/calendario", icon: CalendarDays },
   { label: "Comidas", href: "/comidas", icon: UtensilsCrossed },
   { label: "Ejercicios", href: "/ejercicios", icon: Dumbbell },
   { label: "Alimentos", href: "/alimentos", icon: Apple },

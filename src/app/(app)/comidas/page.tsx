@@ -44,10 +44,12 @@ export default function ComidasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Comidas</h1>
-        <Button onClick={() => setSheetOpen(true)}>
-          <Plus className="size-4 mr-1" />
-          Nueva
-        </Button>
+        {!summary?.closed && (
+          <Button onClick={() => setSheetOpen(true)}>
+            <Plus className="size-4 mr-1" />
+            Nueva
+          </Button>
+        )}
       </div>
 
       {summary && summary.meals.count > 0 && (
@@ -151,20 +153,24 @@ export default function ComidasPage() {
                     <Button variant="ghost" size="icon-sm" onClick={() => setViewingMealId(meal.id)}>
                       <Eye className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" render={<Link href={`/comidas/${meal.id}/editar`} />}>
-                      <Pencil className="size-4" />
-                    </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="ghost" size="icon-sm">
-                          <Trash2 className="size-4" />
+                    {!summary?.closed && (
+                      <>
+                        <Button variant="ghost" size="icon-sm" render={<Link href={`/comidas/${meal.id}/editar`} />}>
+                          <Pencil className="size-4" />
                         </Button>
-                      }
-                      title="Eliminar comida"
-                      description={`Se eliminara "${meal.name}" permanentemente.`}
-                      onConfirm={() => handleDelete(meal.id)}
-                      destructive
-                    />
+                        <ConfirmDialog
+                          trigger={
+                            <Button variant="ghost" size="icon-sm">
+                              <Trash2 className="size-4" />
+                            </Button>
+                          }
+                          title="Eliminar comida"
+                          description={`Se eliminara "${meal.name}" permanentemente.`}
+                          onConfirm={() => handleDelete(meal.id)}
+                          destructive
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

@@ -12,7 +12,10 @@ import { BalanceChart } from "@/components/charts/balance-chart";
 import { MacroChart } from "@/components/charts/macro-chart";
 import { MacroPercentChart } from "@/components/charts/macro-percent-chart";
 import { WeightChart } from "@/components/charts/weight-chart";
-import { ExerciseChart } from "@/components/charts/exercise-chart";
+import { StepsChart } from "@/components/charts/steps-chart";
+import { FiberChart } from "@/components/charts/fiber-chart";
+import { CumulativeBalanceChart } from "@/components/charts/cumulative-balance-chart";
+import { ProteinPerKgChart } from "@/components/charts/protein-per-kg-chart";
 import { FoodFrequencyChart } from "@/components/charts/food-frequency-chart";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,10 +64,20 @@ export default function EstadisticasPage() {
         <div className="space-y-4">
           <CalorieChart data={summaries} goalCalories={goals?.daily_calories} />
           <BalanceChart data={summaries} />
+          <CumulativeBalanceChart data={summaries} />
           <MacroChart data={summaries} />
           <MacroPercentChart data={summaries} />
+          <ProteinPerKgChart
+            data={summaries}
+            goalProteinPerKg={
+              goals?.daily_protein_grams && weightData.length > 0
+                ? Math.round((goals.daily_protein_grams / weightData[weightData.length - 1].weight_kg) * 100) / 100
+                : undefined
+            }
+          />
+          <FiberChart data={summaries} goalFiber={goals?.daily_fiber_grams} />
           <WeightChart data={weightData} goalWeight={goals?.target_weight_kg} />
-          <ExerciseChart data={summaries} goalSteps={goals?.daily_steps} />
+          <StepsChart data={summaries} goalSteps={goals?.daily_steps} />
           <FoodFrequencyChart data={foodFreq?.items ?? []} />
         </div>
       )}
