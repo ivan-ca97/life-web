@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useDate } from "@/lib/date/context";
-import { Plus, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useExercises, useDeleteExercise } from "@/lib/hooks/use-exercises";
 import { useDailySummary } from "@/lib/hooks/use-daily-summary";
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ListSkeleton } from "@/components/loading-skeleton";
 import { ExerciseFormSheet } from "@/components/exercise-form-sheet";
+import { HevyImportDialog } from "@/components/hevy-import-dialog";
 import { fmtCal, fmtDuration } from "@/lib/format";
 
 const typeLabels: Record<string, string> = {
@@ -32,6 +33,7 @@ export default function EjerciciosPage() {
 
   useEffect(() => { setOffset(0); }, [date]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const limit = 20;
 
   const { data, isLoading } = useExercises({ date, limit, offset });
@@ -49,12 +51,18 @@ export default function EjerciciosPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Ejercicios</h1>
-        {!summary?.closed && (
-          <Button onClick={() => setSheetOpen(true)}>
-            <Plus className="size-4 mr-1" />
-            Nuevo
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="size-4 mr-1" />
+            Importar
           </Button>
-        )}
+          {!summary?.closed && (
+            <Button onClick={() => setSheetOpen(true)}>
+              <Plus className="size-4 mr-1" />
+              Nuevo
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -143,6 +151,7 @@ export default function EjerciciosPage() {
         </>
       )}
       <ExerciseFormSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      <HevyImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

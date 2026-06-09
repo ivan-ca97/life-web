@@ -54,3 +54,17 @@ export interface CreateExerciseRequest {
 }
 
 export type UpdateExerciseRequest = Partial<CreateExerciseRequest>;
+
+export interface ImportResultItem {
+  date: string;
+  name: string;
+  status: "created" | "skipped" | "blocked";
+  reason?: string;
+}
+
+export interface ImportResponse {
+  created: number;
+  skipped: number;
+  blocked: number;
+  results: ImportResultItem[];
+}

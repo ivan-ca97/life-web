@@ -4,6 +4,7 @@ import type {
   ExercisePage,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  ImportResponse,
 } from "@/lib/types/exercise";
 
 export function createExercise(data: CreateExerciseRequest): Promise<Exercise> {
@@ -41,4 +42,13 @@ export function updateExercise(
 
 export function deleteExercise(id: string): Promise<void> {
   return userFetch<void>(`/exercises/${id}`, { method: "DELETE" });
+}
+
+export function importHevyCsv(file: File): Promise<ImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return userFetch<ImportResponse>("/exercises/import/hevy", {
+    method: "POST",
+    body: formData,
+  });
 }

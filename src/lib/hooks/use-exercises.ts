@@ -58,3 +58,14 @@ export function useDeleteExercise() {
     },
   });
 }
+
+export function useImportHevyCsv() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => exercisesApi.importHevyCsv(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["daily"] });
+    },
+  });
+}
