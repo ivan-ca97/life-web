@@ -131,18 +131,6 @@ function WeightForm({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 max-w-sm">
       <div className="space-y-2">
-        <Label htmlFor="date">Fecha</Label>
-        <Input
-          id="date"
-          type="date"
-          {...register("date", { required: "La fecha es obligatoria" })}
-        />
-        {errors.date && (
-          <p className="text-sm text-destructive">{errors.date.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="weight_kg">Peso (kg)</Label>
         <Input
           id="weight_kg"

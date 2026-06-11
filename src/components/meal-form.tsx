@@ -226,14 +226,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="date">Fecha</Label>
-          <Input id="date" type="date" {...register("date", { required: "La fecha es obligatoria" })} />
-          {errors.date && (
-            <p className="text-sm text-destructive">{errors.date.message}</p>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="type">Tipo</Label>
           <Input id="type" placeholder="desayuno, almuerzo..." {...register("type", { required: "El tipo es obligatorio" })} />

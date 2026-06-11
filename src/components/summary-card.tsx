@@ -7,15 +7,19 @@ interface SummaryCardProps {
   value: string | number;
   unit?: string;
   subtitle?: string | null;
+  correction?: ReactNode;
 }
 
-export function SummaryCard({ icon, label, value, unit, subtitle }: SummaryCardProps) {
+export function SummaryCard({ icon, label, value, unit, subtitle, correction }: SummaryCardProps) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">
         <div className="text-muted-foreground">{icon}</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
+          <div className="flex items-center gap-1">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            {correction}
+          </div>
           <p className="text-2xl font-semibold tabular-nums">
             {value}
             {unit && (

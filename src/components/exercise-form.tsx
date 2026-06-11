@@ -160,14 +160,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 max-w-lg">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="date">Fecha</Label>
-          <Input id="date" type="date" {...register("date", { required: "La fecha es obligatoria" })} />
-          {errors.date && (
-            <p className="text-sm text-destructive">{errors.date.message}</p>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tipo</Label>
           <Select

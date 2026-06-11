@@ -123,7 +123,7 @@ export function CorrectionPopover({
           <Button
             variant="ghost"
             size="icon-xs"
-            className={hasCorrectionForField ? "text-primary" : "text-muted-foreground opacity-0 group-hover/card:opacity-100"}
+            className={hasCorrectionForField ? "text-primary" : "text-muted-foreground opacity-40 hover:opacity-100"}
           />
         }
       >

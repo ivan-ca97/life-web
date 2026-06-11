@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CardSkeleton } from "@/components/loading-skeleton";
+import { format, parse } from "date-fns";
+import { es } from "date-fns/locale";
 import { fmtCal, fmtDuration } from "@/lib/format";
 
 const typeLabels: Record<string, string> = {
@@ -53,7 +55,9 @@ export default function EjercicioDetallePage({
             <Badge variant="outline">
               {typeLabels[exercise.type] ?? exercise.type}
             </Badge>
-            <span className="text-sm text-muted-foreground">{exercise.date}</span>
+            <span className="text-sm text-muted-foreground capitalize">
+              {format(parse(exercise.date, "yyyy-MM-dd", new Date()), "EEEE, yyyy-MM-dd", { locale: es })}
+            </span>
           </div>
           {exercise.name && <h1 className="text-2xl font-semibold">{exercise.name}</h1>}
           {exercise.tags.length > 0 && (
@@ -119,43 +123,43 @@ export default function EjercicioDetallePage({
             {exercise.distance_meters != null && (
               <div>
                 <span className="text-muted-foreground">Distancia:</span>{" "}
-                {(exercise.distance_meters / 1000).toFixed(2)} km
+                {(exercise.distance_meters / 1000).toFixed(1)} km
               </div>
             )}
             {exercise.average_speed_kmh != null && (
               <div>
                 <span className="text-muted-foreground">Vel. media:</span>{" "}
-                {exercise.average_speed_kmh} km/h
+                {exercise.average_speed_kmh.toFixed(1)} km/h
               </div>
             )}
             {exercise.max_speed_kmh != null && (
               <div>
                 <span className="text-muted-foreground">Vel. max:</span>{" "}
-                {exercise.max_speed_kmh} km/h
+                {exercise.max_speed_kmh.toFixed(1)} km/h
               </div>
             )}
             {exercise.average_pace_min_per_km != null && (
               <div>
                 <span className="text-muted-foreground">Ritmo:</span>{" "}
-                {exercise.average_pace_min_per_km} min/km
+                {exercise.average_pace_min_per_km.toFixed(1)} min/km
               </div>
             )}
             {exercise.average_heart_rate != null && (
               <div>
                 <span className="text-muted-foreground">FC media:</span>{" "}
-                {exercise.average_heart_rate} bpm
+                {Math.round(exercise.average_heart_rate)} bpm
               </div>
             )}
             {exercise.max_heart_rate != null && (
               <div>
                 <span className="text-muted-foreground">FC max:</span>{" "}
-                {exercise.max_heart_rate} bpm
+                {Math.round(exercise.max_heart_rate)} bpm
               </div>
             )}
             {exercise.elevation_gain_meters != null && (
               <div>
                 <span className="text-muted-foreground">Desnivel:</span>{" "}
-                {exercise.elevation_gain_meters} m
+                {exercise.elevation_gain_meters.toFixed(1)} m
               </div>
             )}
             {exercise.total_volume_kg != null && (

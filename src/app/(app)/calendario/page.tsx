@@ -55,11 +55,12 @@ function hasDayData(day: DailySummary): boolean {
 
 function getDayStatus(day: DailySummary | undefined, dateStr: string, today: Date, firstDataDate: string | null): DayStatus {
   const date = parse(dateStr, "yyyy-MM-dd", new Date());
-  if (isAfter(date, today) && !isSameDay(date, today)) return "future";
+  const isToday = isSameDay(date, today);
+  if (isAfter(date, today) && !isToday) return "future";
   if (!firstDataDate || dateStr < firstDataDate) return "no_tracking";
   if (!day) return "incomplete";
   if (day.closed) return "closed";
-  if (!hasDayData(day)) return "incomplete";
+  if (!isToday) return "incomplete";
   return "ok";
 }
 
@@ -343,7 +344,7 @@ export default function CalendarioPage() {
                               "relative aspect-square rounded-md flex flex-col items-center justify-center text-sm transition-colors hover:bg-muted/80 cursor-pointer",
                               cfg.bg,
                               cfg.dot && "ring-1 " + cfg.ring,
-                              isToday && "font-bold",
+                              isToday && "font-bold ring-2 ring-primary",
                               (status === "future" || status === "no_tracking") && "text-muted-foreground"
                             )}
                             onDoubleClick={() => {
