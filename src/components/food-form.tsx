@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { X, Plus, ArrowRightLeft } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/select";
 import { useIngredients } from "@/lib/hooks/use-foods";
 import { TagInput } from "@/components/tag-input";
+import { PhotoUpload } from "@/components/photo-upload";
 import { useFoodTags } from "@/lib/hooks/use-tags";
+import type { UploadedPhoto } from "@/lib/hooks/use-media";
 import type {
   Food,
   MeasurementType,
-  FoodConversionRequest,
   CreateFoodRequest,
 } from "@/lib/types/food";
 
@@ -37,13 +38,9 @@ const UNITS_BY_DIMENSION: Record<MeasurementType, string[]> = {
   unit: ["u"],
 };
 
-const ALL_METRIC_UNITS = [...UNITS_BY_DIMENSION.mass, ...UNITS_BY_DIMENSION.volume];
-
-interface ConversionRow {
-  unit: string;
+interface PortionRow {
+  name: string;
   base_equivalent: string;
-  note: string;
-  inverted: boolean;
 }
 
 interface FoodFormValues {
@@ -73,19 +70,33 @@ function toOptNum(val: string): number | undefined {
 
 export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) {
   const [tags, setTags] = useState<string[]>(defaultValues?.tags ?? []);
+  const [photo, setPhoto] = useState<UploadedPhoto[]>(
+    defaultValues?.photo_url ? [{ url: defaultValues.photo_url, is_primary: true }] : []
+  );
   const { data: tagSuggestions } = useFoodTags();
   const [ingredients, setIngredients] = useState<string[]>(
-    defaultValues?.ingredients.map((i) => i.name) ?? []
+    defaultValues?.ingredients?.map((i) => i.name) ?? []
   );
   const [ingredientInput, setIngredientInput] = useState("");
   const [ingredientFocused, setIngredientFocused] = useState(false);
   const ingredientRef = useRef<HTMLInputElement>(null);
-  const [conversions, setConversions] = useState<ConversionRow[]>(
-    defaultValues?.conversions.map((c) => ({
-      unit: c.unit,
-      base_equivalent: c.base_equivalent.toString(),
-      note: c.note ?? "",
-      inverted: c.inverse,
+
+  const [gramsPerMl, setGramsPerMl] = useState(
+    defaultValues?.volume_conversion?.grams_per_ml?.toString() ?? ""
+  );
+  const [volumeNote, setVolumeNote] = useState(
+    defaultValues?.volume_conversion?.note ?? ""
+  );
+  const [unitBaseEquivalent, setUnitBaseEquivalent] = useState(
+    defaultValues?.unit_conversion?.base_equivalent?.toString() ?? ""
+  );
+  const [unitNote, setUnitNote] = useState(
+    defaultValues?.unit_conversion?.note ?? ""
+  );
+  const [portions, setPortions] = useState<PortionRow[]>(
+    defaultValues?.portions?.map((p) => ({
+      name: p.name,
+      base_equivalent: p.base_equivalent.toString(),
     })) ?? []
   );
 
@@ -118,9 +129,6 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
 
   const measurementType = watch("measurement_type");
   const baseUnits = UNITS_BY_DIMENSION[measurementType];
-  const conversionUnits = measurementType === "unit"
-    ? ALL_METRIC_UNITS
-    : [...ALL_METRIC_UNITS, "u"];
 
   function addIngredient(value: string) {
     const trimmed = value.trim();
@@ -140,32 +148,18 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
     setIngredients(ingredients.filter((i) => i !== ingredient));
   }
 
-  function handleAddConversion() {
-    setConversions([
-      ...conversions,
-      { unit: "", base_equivalent: "", note: "", inverted: measurementType === "unit" },
-    ]);
+  function handleAddPortion() {
+    setPortions([...portions, { name: "", base_equivalent: "" }]);
   }
 
-  function handleToggleInversion(index: number) {
-    const updated = [...conversions];
-    const conv = updated[index];
-    updated[index] = { ...conv, inverted: !conv.inverted, base_equivalent: "" };
-    setConversions(updated);
-  }
-
-  function handleConversionChange(
-    index: number,
-    field: keyof ConversionRow,
-    value: string
-  ) {
-    const updated = [...conversions];
+  function handlePortionChange(index: number, field: keyof PortionRow, value: string) {
+    const updated = [...portions];
     updated[index] = { ...updated[index], [field]: value };
-    setConversions(updated);
+    setPortions(updated);
   }
 
-  function handleRemoveConversion(index: number) {
-    setConversions(conversions.filter((_, i) => i !== index));
+  function handleRemovePortion(index: number) {
+    setPortions(portions.filter((_, i) => i !== index));
   }
 
   function onFormSubmit(values: FoodFormValues) {
@@ -174,18 +168,22 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       return;
     }
 
-    const validConversions: FoodConversionRequest[] = [];
-    for (const c of conversions) {
-      const be = Number(c.base_equivalent);
-      if (!c.unit || !be || be <= 0) continue;
-      const conv: FoodConversionRequest = {
-        unit: c.unit,
-        base_equivalent: be,
-      };
-      if (c.inverted) conv.inverse = true;
-      if (c.note.trim()) conv.note = c.note.trim();
-      validConversions.push(conv);
+    const conversions: CreateFoodRequest["conversions"] = {};
+    const gpm = Number(gramsPerMl);
+    if (gpm > 0) {
+      conversions.volume_conversion = { grams_per_ml: gpm };
+      if (volumeNote.trim()) conversions.volume_conversion.note = volumeNote.trim();
     }
+    const ube = Number(unitBaseEquivalent);
+    if (ube > 0) {
+      conversions.unit_conversion = { base_equivalent: ube };
+      if (unitNote.trim()) conversions.unit_conversion.note = unitNote.trim();
+    }
+    const hasConversions = conversions.volume_conversion || conversions.unit_conversion;
+
+    const validPortions = portions
+      .filter((p) => p.name.trim() && Number(p.base_equivalent) > 0)
+      .map((p) => ({ name: p.name.trim(), base_equivalent: Number(p.base_equivalent) }));
 
     onSubmit({
       name: values.name,
@@ -197,11 +195,15 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       default_carbs_grams: toOptNum(values.default_carbs_grams),
       default_fat_grams: toOptNum(values.default_fat_grams),
       default_fiber_grams: toOptNum(values.default_fiber_grams),
-      conversions: validConversions,
+      photo_url: photo.length > 0 ? photo[0].url : undefined,
+      conversions: hasConversions ? conversions : undefined,
+      portions: validPortions,
       tags,
       ingredients,
     });
   }
+
+  const baseUnit = watch("base_unit");
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 max-w-lg">
@@ -283,179 +285,33 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="default_calories">Calorias (kcal)</Label>
-          <Input
-            id="default_calories"
-            type="number"
-            step="any"
-            min="0"
-            {...register("default_calories")}
-          />
+          <Input id="default_calories" type="number" step="any" min="0" {...register("default_calories")} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="default_protein_grams">Proteinas (g)</Label>
-          <Input
-            id="default_protein_grams"
-            type="number"
-            step="any"
-            min="0"
-            {...register("default_protein_grams")}
-          />
+          <Input id="default_protein_grams" type="number" step="any" min="0" {...register("default_protein_grams")} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="default_carbs_grams">Carbohidratos (g)</Label>
-          <Input
-            id="default_carbs_grams"
-            type="number"
-            step="any"
-            min="0"
-            {...register("default_carbs_grams")}
-          />
+          <Input id="default_carbs_grams" type="number" step="any" min="0" {...register("default_carbs_grams")} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="default_fat_grams">Grasas (g)</Label>
-          <Input
-            id="default_fat_grams"
-            type="number"
-            step="any"
-            min="0"
-            {...register("default_fat_grams")}
-          />
+          <Input id="default_fat_grams" type="number" step="any" min="0" {...register("default_fat_grams")} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="default_fiber_grams">Fibra (g)</Label>
-          <Input
-            id="default_fiber_grams"
-            type="number"
-            step="any"
-            min="0"
-            {...register("default_fiber_grams")}
-          />
+          <Input id="default_fiber_grams" type="number" step="any" min="0" {...register("default_fiber_grams")} />
         </div>
       </div>
 
+      {/* Foto */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label>Conversiones</Label>
-          <Button type="button" variant="ghost" size="sm" onClick={handleAddConversion}>
-            <Plus className="size-4 mr-1" />
-            Agregar
-          </Button>
-        </div>
-        {conversions.length > 0 && (
-          <div className="space-y-2">
-            {conversions.map((conv, index) => {
-              const stdUnit = measurementType === "mass" ? "g" : measurementType === "volume" ? "ml" : "u";
-              return (
-                <Card key={index}>
-                  <CardContent className="p-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground shrink-0">1</span>
-                      {conv.inverted ? (
-                        <>
-                          <span className="text-sm font-medium shrink-0">{stdUnit}</span>
-                          <span className="text-sm text-muted-foreground">=</span>
-                          <Input
-                            className="flex-1"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={conv.base_equivalent}
-                            onChange={(e) =>
-                              handleConversionChange(index, "base_equivalent", e.target.value)
-                            }
-                          />
-                          <Select
-                            value={conv.unit}
-                            onValueChange={(v) =>
-                              handleConversionChange(index, "unit", v ?? "")
-                            }
-                          >
-                            <SelectTrigger className="w-20 shrink-0">
-                              <SelectValue placeholder="?" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {conversionUnits.map((u) => (
-                                <SelectItem key={u} value={u}>
-                                  {u}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </>
-                      ) : (
-                        <>
-                          <Select
-                            value={conv.unit}
-                            onValueChange={(v) =>
-                              handleConversionChange(index, "unit", v ?? "")
-                            }
-                          >
-                            <SelectTrigger className="w-20 shrink-0">
-                              <SelectValue placeholder="?" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {conversionUnits.map((u) => (
-                                <SelectItem key={u} value={u}>
-                                  {u}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <span className="text-sm text-muted-foreground">=</span>
-                          <Input
-                            className="flex-1"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={conv.base_equivalent}
-                            onChange={(e) =>
-                              handleConversionChange(index, "base_equivalent", e.target.value)
-                            }
-                          />
-                          <span className="text-sm font-medium shrink-0">{stdUnit}</span>
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground shrink-0"
-                        title="Invertir dirección"
-                        onClick={() => handleToggleInversion(index)}
-                      >
-                        <ArrowRightLeft className="size-3.5" />
-                      </button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0"
-                        onClick={() => handleRemoveConversion(index)}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Nota (opcional)</Label>
-                      <Input
-                        placeholder="Ej: arroz crudo, leche entera..."
-                        value={conv.note}
-                        onChange={(e) =>
-                          handleConversionChange(index, "note", e.target.value)
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-        {conversions.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Sin conversiones. Ej: 1 ml = 0.85 g
-          </p>
-        )}
+        <Label>Foto</Label>
+        <PhotoUpload photos={photo} onChange={(p) => setPhoto(p.slice(0, 1))} />
       </div>
 
+      {/* Ingredientes */}
       <div className="space-y-2">
         <Label>Ingredientes</Label>
         <div className="flex flex-wrap gap-1 mb-2">
@@ -476,36 +332,156 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
             onChange={(e) => setIngredientInput(e.target.value)}
             onKeyDown={handleIngredientKeyDown}
             onFocus={() => setIngredientFocused(true)}
-            onBlur={() => setTimeout(() => setIngredientFocused(false), 150)}
+            onBlur={() => setTimeout(() => setIngredientFocused(false), 200)}
           />
           {ingredientFocused && filteredSuggestions.length > 0 && (
-            <div className="absolute z-10 top-full mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
-              {filteredSuggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    addIngredient(s.name);
-                    ingredientRef.current?.focus();
-                  }}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
+            <Card className="absolute z-50 w-full mt-1 max-h-40 overflow-y-auto">
+              <CardContent className="p-1">
+                {filteredSuggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="w-full text-left px-2 py-1 rounded hover:bg-muted text-sm"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      addIngredient(s.name);
+                      ingredientRef.current?.focus();
+                    }}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
 
+      {/* Tags */}
       <div className="space-y-2">
         <Label>Tags</Label>
-        <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          suggestions={tagSuggestions ?? []}
+          placeholder="Agregar tag..."
+        />
       </div>
 
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? "Guardando..." : "Guardar"}
+      {/* Porciones */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label>Porciones</Label>
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddPortion}>
+            <Plus className="size-4 mr-1" />
+            Agregar
+          </Button>
+        </div>
+        {portions.length > 0 ? (
+          <div className="space-y-2">
+            {portions.map((portion, index) => (
+              <Card key={index}>
+                <CardContent className="p-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Nombre (ej: taza, porcion)"
+                      value={portion.name}
+                      onChange={(e) => handlePortionChange(index, "name", e.target.value)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground shrink-0">=</span>
+                    <Input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="Cantidad"
+                      value={portion.base_equivalent}
+                      onChange={(e) => handlePortionChange(index, "base_equivalent", e.target.value)}
+                      className="w-24"
+                    />
+                    <span className="text-sm font-medium shrink-0">{baseUnit}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0"
+                      onClick={() => handleRemovePortion(index)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Sin porciones. Ej: 1 taza = 240 ml
+          </p>
+        )}
+      </div>
+
+      {/* Conversiones */}
+      <div className="space-y-3">
+        <Label>Conversiones</Label>
+        {(measurementType === "mass" || measurementType === "volume") && (
+          <Card>
+            <CardContent className="p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Densidad (g/ml)
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground shrink-0">1 ml =</span>
+                <Input
+                  type="number"
+                  step="any"
+                  min="0"
+                  placeholder="Ej: 0.92"
+                  value={gramsPerMl}
+                  onChange={(e) => setGramsPerMl(e.target.value)}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium shrink-0">g</span>
+              </div>
+              <Input
+                placeholder="Nota (ej: leche entera)"
+                value={volumeNote}
+                onChange={(e) => setVolumeNote(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        )}
+        {measurementType === "unit" && (
+          <Card>
+            <CardContent className="p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Equivalencia por unidad
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground shrink-0">1 u =</span>
+                <Input
+                  type="number"
+                  step="any"
+                  min="0"
+                  placeholder="Ej: 50"
+                  value={unitBaseEquivalent}
+                  onChange={(e) => setUnitBaseEquivalent(e.target.value)}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium shrink-0">g</span>
+              </div>
+              <Input
+                placeholder="Nota (ej: huevo mediano)"
+                value={unitNote}
+                onChange={(e) => setUnitNote(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? "Guardando..." : defaultValues ? "Guardar cambios" : "Crear alimento"}
       </Button>
     </form>
   );

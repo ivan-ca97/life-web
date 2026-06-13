@@ -1,9 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useDate } from "@/lib/date/context";
-import { X, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { X, ChevronDown, ChevronRight, Loader2, ImagePlus, Star } from "lucide-react";
 import { addDays, format, parse, differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,16 +34,19 @@ import { TagInput } from "@/components/tag-input";
 import { MacroBar } from "@/components/macro-bar";
 import { useMealPreview } from "@/lib/hooks/use-meals";
 import { useMealTags } from "@/lib/hooks/use-tags";
-import type { Meal, MealItemRequest } from "@/lib/types/meal";
+import type { Meal, MealItemRequest, MealPhotoRequest } from "@/lib/types/meal";
 import type { Food } from "@/lib/types/food";
+import { useMediaUpload, type UploadedPhoto } from "@/lib/hooks/use-media";
+import { getAvailableUnits } from "@/lib/food-units";
+import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import { fmtCal, fmtGrams } from "@/lib/format";
+import { toast } from "sonner";
 
 interface MealFormValues {
   date: string;
   eaten_time: string;
   type: string;
   name: string;
-  photo_url: string;
   notes: string;
 }
 
@@ -47,6 +61,7 @@ const macroFieldsMeta: { key: MacroField; label: string }[] = [
 ];
 
 interface MealItemRow {
+  item_id?: string;
   food_id: string;
   food_name: string;
   quantity: string;
@@ -54,6 +69,9 @@ interface MealItemRow {
   food_base_unit: string;
   food_base_quantity: number;
   food_conversion_units: string[];
+  measurement_method: string;
+  associatedPhotoUrls: string[];
+  primaryPhotoUrl: string | null;
   notes: string;
 }
 
@@ -64,7 +82,7 @@ interface MealFormProps {
     eaten_at?: string;
     type: string;
     name?: string;
-    photo_url: string;
+    photos?: MealPhotoRequest[];
     calories?: number;
     protein_grams?: number;
     carbs_grams?: number;
@@ -84,9 +102,94 @@ function toOptNum(val: string): number | undefined {
   return n;
 }
 
+/* ---------- Drag & Drop sub-components ---------- */
+
+function DraggablePhoto({
+  url,
+  isPrimary,
+  onSetPrimary,
+  onRemove,
+}: {
+  url: string;
+  isPrimary: boolean;
+  onSetPrimary: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `photo-${url}`,
+    data: { url },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`relative size-20 rounded-md overflow-hidden border cursor-grab active:cursor-grabbing touch-none ${
+        isDragging ? "opacity-30" : ""
+      }`}
+    >
+      <img src={url} alt="" className="size-full object-cover pointer-events-none" />
+      <button
+        type="button"
+        className={`absolute top-0.5 left-0.5 p-0.5 rounded-sm transition-colors ${
+          isPrimary ? "text-yellow-400" : "text-white/50 hover:text-yellow-400"
+        }`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={onSetPrimary}
+        title="Foto principal"
+      >
+        <Star className={`size-3.5 ${isPrimary ? "fill-yellow-400" : ""}`} />
+      </button>
+      <button
+        type="button"
+        className="absolute top-0.5 right-0.5 p-0.5 rounded-sm text-white/50 hover:text-red-400 transition-colors"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={onRemove}
+      >
+        <X className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function DroppableItemCard({
+  id,
+  isDragging,
+  children,
+}: {
+  id: string;
+  isDragging: boolean;
+  children: React.ReactNode;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id });
+
+  return (
+    <Card
+      ref={setNodeRef}
+      className={
+        isDragging
+          ? isOver
+            ? "ring-2 ring-primary bg-primary/5"
+            : "ring-1 ring-dashed ring-muted-foreground/30"
+          : ""
+      }
+    >
+      {children}
+    </Card>
+  );
+}
+
+/* ---------- Main form ---------- */
+
 export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) {
   const { date: globalDate } = useDate();
   const [tags, setTags] = useState<string[]>(defaultValues?.tags ?? []);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>(
+    defaultValues?.photos
+      ?.filter((p) => !p.meal_item_id)
+      .map((p) => ({ url: p.url, is_primary: p.is_primary })) ?? []
+  );
   const [extraOpen, setExtraOpen] = useState(false);
   const { data: tagSuggestions } = useMealTags();
   const [submitError, setSubmitError] = useState("");
@@ -100,6 +203,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
   });
   const [items, setItems] = useState<MealItemRow[]>(
     defaultValues?.items.map((i) => ({
+      item_id: i.id,
       food_id: i.food_id,
       food_name: i.food_name,
       quantity: String(i.input_quantity),
@@ -107,10 +211,54 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       food_base_unit: i.normalized_unit,
       food_base_quantity: 0,
       food_conversion_units: [],
+      measurement_method: i.measurement_method ?? "",
+      associatedPhotoUrls: defaultValues.photos
+        .filter((p) => p.meal_item_id === i.id)
+        .map((p) => p.url),
+      primaryPhotoUrl:
+        defaultValues.photos.find((p) => p.meal_item_id === i.id && p.is_primary)
+          ?.url ?? null,
       notes: i.notes,
     })) ?? []
   );
 
+  /* Photo upload */
+  const { uploadFiles, uploading, progress } = useMediaUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileDragOver, setFileDragOver] = useState(false);
+
+  /* DnD sensors — require 8px movement so clicks on star/X buttons work */
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+  const [activeDragUrl, setActiveDragUrl] = useState<string | null>(null);
+
+  const handleDragStart = useCallback((e: DragStartEvent) => {
+    setActiveDragUrl((e.active.data.current as { url: string })?.url ?? null);
+  }, []);
+
+  const handleDragEnd = useCallback((e: DragEndEvent) => {
+    setActiveDragUrl(null);
+    if (!e.over) return;
+    const url = (e.active.data.current as { url: string })?.url;
+    const overId = e.over.id.toString();
+    if (!url || !overId.startsWith("item-drop-")) return;
+    const itemIndex = Number(overId.replace("item-drop-", ""));
+    if (isNaN(itemIndex)) return;
+    setItems((prev) => {
+      const item = prev[itemIndex];
+      if (item.associatedPhotoUrls.includes(url)) return prev;
+      const updated = [...prev];
+      updated[itemIndex] = {
+        ...item,
+        associatedPhotoUrls: [...item.associatedPhotoUrls, url],
+        primaryPhotoUrl: item.primaryPhotoUrl ?? url,
+      };
+      return updated;
+    });
+  }, []);
+
+  /* Preview */
   const previewItems = useMemo(
     () => items.map((i) => ({ food_id: i.food_id, quantity: Number(i.quantity), unit: i.unit })),
     [items]
@@ -154,13 +302,83 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
   } = useForm<MealFormValues>({
     defaultValues: {
       date: defaultValues?.date ?? globalDate,
-      eaten_time: defaultValues?.eaten_at?.slice(11, 16) ?? (globalDate === format(new Date(), "yyyy-MM-dd") ? format(new Date(), "HH:mm") : "00:00"),
+      eaten_time:
+        defaultValues?.eaten_at?.slice(11, 16) ??
+        (globalDate === format(new Date(), "yyyy-MM-dd")
+          ? format(new Date(), "HH:mm")
+          : "00:00"),
       type: defaultValues?.type ?? "",
       name: defaultValues?.name ?? "",
-      photo_url: defaultValues?.photo_url ?? "",
       notes: defaultValues?.notes ?? "",
     },
   });
+
+  /* --- Photo handlers --- */
+
+  async function handleFileUpload(files: FileList | File[]) {
+    const arr = Array.from(files).filter((f) =>
+      ["image/jpeg", "image/png", "image/webp"].includes(f.type)
+    );
+    if (arr.length === 0) return;
+    try {
+      const urls = await uploadFiles(arr);
+      const newPhotos: UploadedPhoto[] = urls.map((url) => ({
+        url,
+        is_primary: false,
+      }));
+      const combined = [...photos, ...newPhotos];
+      if (!combined.some((p) => p.is_primary) && combined.length > 0) {
+        combined[0] = { ...combined[0], is_primary: true };
+      }
+      setPhotos(combined);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al subir fotos");
+    }
+  }
+
+  function handleRemovePhoto(index: number) {
+    const removed = photos[index];
+    const updated = photos.filter((_, i) => i !== index);
+    if (removed.is_primary && updated.length > 0) {
+      updated[0] = { ...updated[0], is_primary: true };
+    }
+    setItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        associatedPhotoUrls: item.associatedPhotoUrls.filter((u) => u !== removed.url),
+      }))
+    );
+    setPhotos(updated);
+  }
+
+  function handleSetPrimary(index: number) {
+    setPhotos(photos.map((p, i) => ({ ...p, is_primary: i === index })));
+  }
+
+  function handleDisassociatePhoto(itemIndex: number, url: string) {
+    setItems((prev) => {
+      const updated = [...prev];
+      const item = updated[itemIndex];
+      const newUrls = item.associatedPhotoUrls.filter((u) => u !== url);
+      updated[itemIndex] = {
+        ...item,
+        associatedPhotoUrls: newUrls,
+        primaryPhotoUrl:
+          item.primaryPhotoUrl === url ? newUrls[0] ?? null : item.primaryPhotoUrl,
+      };
+      return updated;
+    });
+  }
+
+  function handleSetItemPrimary(itemIndex: number, url: string) {
+    setItems((prev) => {
+      const updated = [...prev];
+      updated[itemIndex] = { ...updated[itemIndex], primaryPhotoUrl: url };
+      return updated;
+    });
+  }
+
+  /* --- Item handlers --- */
 
   function handleAddFood(food: Food) {
     setItems([
@@ -172,7 +390,10 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         unit: food.base_unit,
         food_base_unit: food.base_unit,
         food_base_quantity: food.base_quantity,
-        food_conversion_units: food.conversions.map((c) => c.unit),
+        food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),
+        measurement_method: "",
+        associatedPhotoUrls: [],
+        primaryPhotoUrl: null,
         notes: "",
       },
     ]);
@@ -182,15 +403,13 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     setItems(items.filter((_, i) => i !== index));
   }
 
-  function handleItemChange(
-    index: number,
-    field: keyof MealItemRow,
-    value: string | number
-  ) {
+  function handleItemChange(index: number, field: keyof MealItemRow, value: string | number) {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
   }
+
+  /* --- Submit --- */
 
   function onFormSubmit(values: MealFormValues) {
     const hasMacros = macroFieldsMeta.some(({ key }) => getEffectiveNumber(key) > 0);
@@ -200,6 +419,18 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       return;
     }
     setSubmitError("");
+
+    const allPhotos: MealPhotoRequest[] = [];
+    for (const p of photos) {
+      allPhotos.push({ url: p.url, is_primary: p.is_primary });
+    }
+    for (const item of items) {
+      if (!item.item_id) continue;
+      for (const url of item.associatedPhotoUrls) {
+        allPhotos.push({ url, is_primary: url === item.primaryPhotoUrl, meal_item_id: item.item_id });
+      }
+    }
+
     onSubmit({
       date: values.date,
       eaten_at: values.eaten_time
@@ -207,7 +438,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         : undefined,
       type: values.type,
       name: values.name || undefined,
-      photo_url: values.photo_url,
+      photos: allPhotos.length > 0 ? allPhotos : undefined,
       calories: macroOverrides.calories !== undefined ? toOptNum(macroOverrides.calories) : undefined,
       protein_grams: macroOverrides.protein_grams !== undefined ? toOptNum(macroOverrides.protein_grams) : undefined,
       carbs_grams: macroOverrides.carbs_grams !== undefined ? toOptNum(macroOverrides.carbs_grams) : undefined,
@@ -218,6 +449,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         food_id: i.food_id,
         quantity: Number(i.quantity),
         unit: i.unit,
+        measurement_method: i.measurement_method || undefined,
         notes: i.notes,
       })),
       notes: values.notes,
@@ -225,208 +457,326 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
   }
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="type">Tipo</Label>
-          <Input id="type" placeholder="desayuno, almuerzo..." {...register("type", { required: "El tipo es obligatorio" })} />
-          {errors.type && (
-            <p className="text-sm text-destructive">{errors.type.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Hora</Label>
-          <div className="flex items-center gap-1">
-            <Input type="time" className="flex-1" {...register("eaten_time")} />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              className={dayOffset === 1 ? "text-primary" : ""}
-              onClick={() => setDayOffset(dayOffset === 1 ? 0 : 1)}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl">
+        {/* Tipo + Hora */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo</Label>
+            <Input
+              id="type"
+              placeholder="desayuno, almuerzo..."
+              {...register("type", { required: "El tipo es obligatorio" })}
+            />
+            {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
           </div>
-          {dayOffset === 1 && (
-            <p className="text-xs text-muted-foreground">Dia siguiente</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Label className="text-sm">Macros</Label>
-          {previewLoading && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
-          {previewError && (
-            <span className="text-xs text-destructive">
-              {previewError instanceof Error ? previewError.message : "Error al cargar preview"}
-            </span>
-          )}
-        </div>
-        <div className="grid grid-cols-5 gap-2 items-end">
-          {macroFieldsMeta.map(({ key, label }) => (
-            <div key={key} className="space-y-1">
-              <Label className="text-xs">{label}</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={getMacroValue(key)}
-                  onChange={(e) => handleMacroChange(key, e.target.value)}
-                  className={isOverridden(key) ? "border-amber-500/70 pr-7" : ""}
-                />
-                {isOverridden(key) && (
-                  <button
-                    type="button"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    onClick={() => resetMacro(key)}
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
-              </div>
+          <div className="space-y-2">
+            <Label>Hora</Label>
+            <div className="flex items-center gap-1">
+              <Input type="time" className="flex-1" {...register("eaten_time")} />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className={dayOffset === 1 ? "text-primary" : ""}
+                onClick={() => setDayOffset(dayOffset === 1 ? 0 : 1)}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
             </div>
-          ))}
+            {dayOffset === 1 && <p className="text-xs text-muted-foreground">Dia siguiente</p>}
+          </div>
         </div>
-        <MacroBar
-          protein={getEffectiveNumber("protein_grams")}
-          carbs={getEffectiveNumber("carbs_grams")}
-          fat={getEffectiveNumber("fat_grams")}
-        />
-      </div>
 
-      <div className="space-y-3">
-        <Label>Alimentos</Label>
-        {items.map((item, index) => (
-          <Card key={index}>
-            <CardContent className="p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{item.food_name}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => handleRemoveItem(index)}
-                >
-                  <X className="size-3" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-xs">Cantidad</Label>
+        {/* Macros */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm">Macros</Label>
+            {previewLoading && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+            {previewError && (
+              <span className="text-xs text-destructive">
+                {previewError instanceof Error ? previewError.message : "Error al cargar preview"}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-5 gap-2 items-end">
+            {macroFieldsMeta.map(({ key, label }) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs">{label}</Label>
+                <div className="relative">
                   <Input
                     type="number"
                     step="any"
                     min="0"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(index, "quantity", e.target.value.replace(/^0+(?=\d)/, ""))
-                    }
+                    value={getMacroValue(key)}
+                    onChange={(e) => handleMacroChange(key, e.target.value)}
+                    className={isOverridden(key) ? "border-amber-500/70 pr-7" : ""}
                   />
-                </div>
-                <div>
-                  <Label className="text-xs">Unidad</Label>
-                  <Select
-                    value={item.unit}
-                    onValueChange={(v) =>
-                      handleItemChange(index, "unit", v ?? item.unit)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {item.food_base_unit && (
-                        <SelectItem value={item.food_base_unit}>
-                          {item.food_base_unit}
-                        </SelectItem>
-                      )}
-                      {item.food_conversion_units.map((u) => (
-                        <SelectItem key={u} value={u}>
-                          {u}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Notas</Label>
-                  <Input
-                    value={item.notes}
-                    onChange={(e) =>
-                      handleItemChange(index, "notes", e.target.value)
-                    }
-                  />
+                  {isOverridden(key) && (
+                    <button
+                      type="button"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => resetMacro(key)}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
                 </div>
               </div>
-              {item.food_base_quantity > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Porcion: {item.food_base_quantity} {item.food_base_unit}
-                </p>
-              )}
-              {(() => {
-                const pi = preview?.items?.[index];
-                if (!pi) return null;
-                const parts: string[] = [];
-                if (pi.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
-                if (pi.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
-                if (pi.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
-                if (pi.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
-                if (pi.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
-                if (parts.length === 0) return null;
-                return (
-                  <p className="text-xs text-muted-foreground">{parts.join(" · ")}</p>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        ))}
-        <FoodSearchCombobox
-          onSelect={handleAddFood}
-          excludeIds={items.map((i) => i.food_id)}
-        />
-      </div>
-
-      <div>
-        <button
-          type="button"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setExtraOpen(!extraOpen)}
-        >
-          <ChevronDown
-            className={`size-4 transition-transform ${extraOpen ? "rotate-180" : ""}`}
+            ))}
+          </div>
+          <MacroBar
+            protein={getEffectiveNumber("protein_grams")}
+            carbs={getEffectiveNumber("carbs_grams")}
+            fat={getEffectiveNumber("fat_grams")}
           />
-          Opciones adicionales
-        </button>
-        {extraOpen && (
-          <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
-              <Input id="name" {...register("name")} />
-            </div>
+        </div>
 
-            <div className="space-y-2">
-              <Label>Tags</Label>
-              <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
-            </div>
+        {/* Alimentos */}
+        <div className="space-y-3">
+          <Label>Alimentos</Label>
+          {items.map((item, index) => (
+            <DroppableItemCard key={index} id={`item-drop-${index}`} isDragging={!!activeDragUrl}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{item.food_name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => handleRemoveItem(index)}
+                  >
+                    <X className="size-3" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">Cantidad</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleItemChange(index, "quantity", e.target.value.replace(/^0+(?=\d)/, ""))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Unidad</Label>
+                    <Select
+                      value={item.unit}
+                      onValueChange={(v) => handleItemChange(index, "unit", v ?? item.unit)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {item.food_base_unit && (
+                          <SelectItem value={item.food_base_unit}>{item.food_base_unit}</SelectItem>
+                        )}
+                        {item.food_conversion_units.map((u) => (
+                          <SelectItem key={u} value={u}>
+                            {u}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Metodo</Label>
+                    <Select
+                      value={item.measurement_method}
+                      onValueChange={(v) => handleItemChange(index, "measurement_method", v ?? "")}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="—">
+                          {getMethodLabel(item.measurement_method) || "—"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">—</SelectItem>
+                        {MEASUREMENT_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Notas</Label>
+                    <Input
+                      value={item.notes}
+                      onChange={(e) => handleItemChange(index, "notes", e.target.value)}
+                    />
+                  </div>
+                </div>
+                {item.food_base_quantity > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Porcion: {item.food_base_quantity} {item.food_base_unit}
+                  </p>
+                )}
+                {(() => {
+                  const pi = preview?.items?.[index];
+                  if (!pi) return null;
+                  const parts: string[] = [];
+                  if (pi.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
+                  if (pi.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
+                  if (pi.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
+                  if (pi.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
+                  if (pi.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
+                  if (parts.length === 0) return null;
+                  return <p className="text-xs text-muted-foreground">{parts.join(" · ")}</p>;
+                })()}
+                {item.associatedPhotoUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.associatedPhotoUrls.map((url) => {
+                      const isItemPrimary = url === item.primaryPhotoUrl;
+                      return (
+                        <div key={url} className="relative size-20 rounded-md overflow-hidden border">
+                          <img src={url} alt="" className="size-full object-cover" />
+                          <button
+                            type="button"
+                            className={`absolute top-0.5 left-0.5 p-0.5 rounded-sm transition-colors ${
+                              isItemPrimary ? "text-yellow-400" : "text-white/50 hover:text-yellow-400"
+                            }`}
+                            onClick={() => handleSetItemPrimary(index, url)}
+                            title="Foto principal del item"
+                          >
+                            <Star className={`size-3.5 ${isItemPrimary ? "fill-yellow-400" : ""}`} />
+                          </button>
+                          <button
+                            type="button"
+                            className="absolute top-0.5 right-0.5 p-0.5 rounded-sm text-white/50 hover:text-red-400 transition-colors"
+                            onClick={() => handleDisassociatePhoto(index, url)}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </DroppableItemCard>
+          ))}
+          <FoodSearchCombobox
+            onSelect={handleAddFood}
+            excludeIds={items.map((i) => i.food_id)}
+          />
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notas</Label>
-              <Textarea id="notes" rows={2} {...register("notes")} />
+        {/* Fotos */}
+        <div className="space-y-2">
+          <Label>Fotos</Label>
+          {photos.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {photos.map((photo, index) => (
+                <DraggablePhoto
+                  key={photo.url}
+                  url={photo.url}
+                  isPrimary={photo.is_primary}
+                  onSetPrimary={() => handleSetPrimary(index)}
+                  onRemove={() => handleRemovePhoto(index)}
+                />
+              ))}
             </div>
+          )}
+          {items.length > 0 && photos.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Arrastra una foto a un alimento para asociarla
+            </p>
+          )}
+          <div
+            onDrop={(e) => {
+              e.preventDefault();
+              setFileDragOver(false);
+              handleFileUpload(e.dataTransfer.files);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setFileDragOver(true);
+            }}
+            onDragLeave={() => setFileDragOver(false)}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex items-center justify-center gap-2 rounded-md border-2 border-dashed p-4 cursor-pointer transition-colors text-sm text-muted-foreground ${
+              fileDragOver
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-muted-foreground/50"
+            }`}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                <span>
+                  Subiendo {progress.done}/{progress.total}...
+                </span>
+              </>
+            ) : (
+              <>
+                <ImagePlus className="size-4" />
+                <span>Arrastra fotos o haz click para seleccionar</span>
+              </>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) handleFileUpload(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        {/* Opciones adicionales */}
+        <div>
+          <button
+            type="button"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setExtraOpen(!extraOpen)}
+          >
+            <ChevronDown
+              className={`size-4 transition-transform ${extraOpen ? "rotate-180" : ""}`}
+            />
+            Opciones adicionales
+          </button>
+          {extraOpen && (
+            <div className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre</Label>
+                <Input id="name" {...register("name")} />
+              </div>
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea id="notes" rows={2} {...register("notes")} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Guardando..." : "Guardar"}
+        </Button>
+      </form>
+
+      <DragOverlay>
+        {activeDragUrl && (
+          <div className="size-16 rounded-md overflow-hidden border-2 border-primary shadow-lg opacity-80">
+            <img src={activeDragUrl} alt="" className="size-full object-cover" />
           </div>
         )}
-      </div>
-
-      {submitError && (
-        <p className="text-sm text-destructive">{submitError}</p>
-      )}
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? "Guardando..." : "Guardar"}
-      </Button>
-    </form>
+      </DragOverlay>
+    </DndContext>
   );
 }

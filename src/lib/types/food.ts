@@ -2,18 +2,20 @@ import type { PaginatedResponse } from "./api";
 
 export type MeasurementType = "mass" | "volume" | "unit";
 
-export interface FoodConversion {
-  unit: string;
-  base_equivalent: number;
-  inverse: boolean;
+export interface VolumeConversion {
+  grams_per_ml: number;
   note?: string;
 }
 
-export interface FoodConversionRequest {
-  unit: string;
+export interface UnitConversion {
   base_equivalent: number;
-  inverse?: boolean;
   note?: string;
+}
+
+export interface Portion {
+  id: string;
+  name: string;
+  base_equivalent: number;
 }
 
 export interface Ingredient {
@@ -34,7 +36,10 @@ export interface Food {
   default_fat_grams?: number;
   default_fiber_grams?: number;
   public: boolean;
-  conversions: FoodConversion[];
+  photo_url?: string;
+  volume_conversion?: VolumeConversion;
+  unit_conversion?: UnitConversion;
+  portions: Portion[];
   tags: string[];
   ingredients: Ingredient[];
   created_at: string;
@@ -42,6 +47,16 @@ export interface Food {
 }
 
 export type FoodPage = PaginatedResponse<Food>;
+
+export interface ConversionsRequest {
+  volume_conversion?: { grams_per_ml: number; note?: string };
+  unit_conversion?: { base_equivalent: number; note?: string };
+}
+
+export interface PortionRequest {
+  name: string;
+  base_equivalent: number;
+}
 
 export interface CreateFoodRequest {
   name: string;
@@ -54,7 +69,9 @@ export interface CreateFoodRequest {
   default_fat_grams?: number;
   default_fiber_grams?: number;
   public?: boolean;
-  conversions?: FoodConversionRequest[];
+  photo_url?: string;
+  conversions?: ConversionsRequest;
+  portions?: PortionRequest[];
   tags?: string[];
   ingredients?: string[];
 }

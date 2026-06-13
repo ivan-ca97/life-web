@@ -17,10 +17,13 @@ import {
 } from "@/components/ui/select";
 import { MacroBar } from "@/components/macro-bar";
 import { TagInput } from "@/components/tag-input";
+import { PhotoUpload } from "@/components/photo-upload";
 import { useMealTags } from "@/lib/hooks/use-tags";
 import { fmtCal, fmtGrams } from "@/lib/format";
+import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import type { BuilderItem, MealMeta } from "./use-meal-builder";
 import type { MealPreviewResponse } from "@/lib/types/meal";
+import type { UploadedPhoto } from "@/lib/hooks/use-media";
 
 interface MealBuilderPanelProps {
   items: BuilderItem[];
@@ -55,6 +58,7 @@ export function MealBuilderPanel({
   const [eatenTime, setEatenTime] = useState("");
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [extraOpen, setExtraOpen] = useState(false);
   const [typeError, setTypeError] = useState("");
   const { data: tagSuggestions } = useMealTags();
@@ -71,12 +75,14 @@ export function MealBuilderPanel({
       eaten_time: eatenTime || undefined,
       notes: notes.trim() || undefined,
       tags: tags.length > 0 ? tags : undefined,
+      photos: photos.length > 0 ? photos : undefined,
     });
     setType("");
     setName("");
     setEatenTime("");
     setNotes("");
     setTags([]);
+    setPhotos([]);
   }
 
   return (
@@ -180,6 +186,27 @@ export function MealBuilderPanel({
                     </Select>
                   </div>
                 </div>
+                <div>
+                  <Label className="text-xs">Metodo</Label>
+                  <Select
+                    value={item.measurement_method}
+                    onValueChange={(v) => onUpdateItem(index, "measurement_method", v ?? "")}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="—">
+                        {getMethodLabel(item.measurement_method) || "—"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">—</SelectItem>
+                      {MEASUREMENT_METHODS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {(() => {
                   const pi = preview?.items?.[index];
                   if (!pi) return null;
@@ -261,6 +288,10 @@ export function MealBuilderPanel({
             <div className="space-y-1">
               <Label className="text-xs">Notas</Label>
               <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fotos</Label>
+              <PhotoUpload photos={photos} onChange={setPhotos} />
             </div>
           </div>
         )}

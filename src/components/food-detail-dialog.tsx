@@ -100,24 +100,17 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
                 />
               </div>
 
-              {/* Conversiones */}
-              {food.conversions.length > 0 && (
+              {/* Ingredientes */}
+              {food.ingredients.length > 0 && (
                 <div className="space-y-1.5">
-                  <h4 className="text-sm font-medium">Conversiones</h4>
-                  <ul className="space-y-1 text-sm">
-                    {food.conversions.map((conv, i) => (
-                      <li key={i} className="flex items-center gap-1.5 text-muted-foreground">
-                        <span>
-                          {conv.inverse
-                            ? `1 ${food.base_unit} = ${conv.base_equivalent} ${conv.unit}`
-                            : `1 ${conv.unit} = ${conv.base_equivalent} ${food.base_unit}`}
-                        </span>
-                        {conv.note && (
-                          <span className="text-xs italic">({conv.note})</span>
-                        )}
-                      </li>
+                  <h4 className="text-sm font-medium">Ingredientes</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {food.ingredients.map((ing) => (
+                      <Badge key={ing.id} variant="outline">
+                        {ing.name}
+                      </Badge>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
@@ -135,17 +128,42 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
                 </div>
               )}
 
-              {/* Ingredientes */}
-              {food.ingredients.length > 0 && (
+              {/* Porciones */}
+              {food.portions.length > 0 && (
                 <div className="space-y-1.5">
-                  <h4 className="text-sm font-medium">Ingredientes</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {food.ingredients.map((ing) => (
-                      <Badge key={ing.id} variant="outline">
-                        {ing.name}
-                      </Badge>
+                  <h4 className="text-sm font-medium">Porciones</h4>
+                  <ul className="space-y-1 text-sm">
+                    {food.portions.map((p) => (
+                      <li key={p.id} className="text-muted-foreground">
+                        1 {p.name} = {p.base_equivalent} {food.base_unit}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
+                </div>
+              )}
+
+              {/* Conversiones */}
+              {(food.volume_conversion || food.unit_conversion) && (
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-medium">Conversiones</h4>
+                  <ul className="space-y-1 text-sm">
+                    {food.volume_conversion && (
+                      <li className="flex items-center gap-1.5 text-muted-foreground">
+                        <span>1 ml = {food.volume_conversion.grams_per_ml} g</span>
+                        {food.volume_conversion.note && (
+                          <span className="text-xs italic">({food.volume_conversion.note})</span>
+                        )}
+                      </li>
+                    )}
+                    {food.unit_conversion && (
+                      <li className="flex items-center gap-1.5 text-muted-foreground">
+                        <span>1 u = {food.unit_conversion.base_equivalent} {food.base_unit}</span>
+                        {food.unit_conversion.note && (
+                          <span className="text-xs italic">({food.unit_conversion.note})</span>
+                        )}
+                      </li>
+                    )}
+                  </ul>
                 </div>
               )}
             </div>

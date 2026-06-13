@@ -1,10 +1,14 @@
 "use client";
 
+import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useMeal } from "@/lib/hooks/use-meals";
 import { fmtCal, fmtGrams } from "@/lib/format";
+import { getMethodMeta } from "@/lib/measurement-method";
 import { MacroBar } from "@/components/macro-bar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Star, ImageIcon, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import type { MealPhoto } from "@/lib/types/meal";
 
 interface MealDetailDialogProps {
   open: boolean;
@@ -21,6 +26,47 @@ interface MealDetailDialogProps {
 
 export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialogProps) {
   const { data: meal, isLoading } = useMeal(mealId);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+
+  const photoToItems = useMemo(() => {
+    if (!meal) return new Map<string, string[]>();
+    const map = new Map<string, string[]>();
+    for (const p of meal.photos) {
+      if (p.meal_item_id) {
+        const ids = map.get(p.url) || [];
+        if (!ids.includes(p.meal_item_id)) map.set(p.url, [...ids, p.meal_item_id]);
+      }
+    }
+    return map;
+  }, [meal]);
+
+  const itemToPhotos = useMemo(() => {
+    if (!meal) return new Map<string, string[]>();
+    const map = new Map<string, string[]>();
+    for (const p of meal.photos) {
+      if (p.meal_item_id) {
+        const urls = map.get(p.meal_item_id) || [];
+        if (!urls.includes(p.url)) map.set(p.meal_item_id, [...urls, p.url]);
+      }
+    }
+    return map;
+  }, [meal]);
+
+  const highlightedItemIds = useMemo(() => {
+    if (!selectedPhotoUrl) return new Set<string>();
+    return new Set(photoToItems.get(selectedPhotoUrl) || []);
+  }, [selectedPhotoUrl, photoToItems]);
+
+  const galleryPhotos = useMemo(() => {
+    if (!meal) return [];
+    const seen = new Map<string, MealPhoto>();
+    for (const p of meal.photos) {
+      if (!seen.has(p.url) || (!p.meal_item_id && seen.get(p.url)?.meal_item_id)) {
+        seen.set(p.url, p);
+      }
+    }
+    return Array.from(seen.values());
+  }, [meal]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,7 +86,16 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>{meal.name || meal.type}</DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle>{meal.name || meal.type}</DialogTitle>
+                <Link
+                  href={`/comidas/${meal.id}/editar`}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  onClick={() => onOpenChange(false)}
+                >
+                  <Pencil className="size-4" />
+                </Link>
+              </div>
               <DialogDescription className="flex items-center gap-2">
                 <Badge variant="outline">{meal.type}</Badge>
                 {meal.eaten_at && (
@@ -55,7 +110,14 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Macros */}
+              {galleryPhotos.length > 0 && (
+                <MealPhotoGallery
+                  photos={galleryPhotos}
+                  photoToItems={photoToItems}
+                  onPhotoSelect={setSelectedPhotoUrl}
+                />
+              )}
+
               {(meal.calories != null || meal.protein_grams != null) && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Macros</h4>
@@ -99,46 +161,67 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
                 </div>
               )}
 
-              {/* Alimentos */}
               {meal.items.length > 0 && (
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium">Alimentos</h4>
                   <div className="space-y-2">
-                    {meal.items.map((item) => (
-                      <div key={item.id} className="text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{item.food_name}</span>
-                          <span className="text-muted-foreground text-xs">
-                            {item.input_quantity} {item.input_unit}
-                          </span>
+                    {meal.items.map((item) => {
+                      const method = getMethodMeta(item.measurement_method);
+                      const hasPhotos = itemToPhotos.has(item.id);
+                      const isHighlighted = highlightedItemIds.has(item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={`text-sm transition-colors duration-200 rounded-md ${
+                            isHighlighted ? "bg-primary/10 px-2 py-1.5 -mx-2" : ""
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium">{item.food_name}</span>
+                              {method && (
+                                <span className={`text-[10px] ${method.color}`} title={method.label}>
+                                  {method.shortLabel}
+                                </span>
+                              )}
+                              {hasPhotos && (
+                                <ImageIcon className="size-3 text-muted-foreground" />
+                              )}
+                            </div>
+                            <span className="text-muted-foreground text-xs">
+                              {item.input_quantity} {item.input_unit}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {[
+                              item.calories != null && `${fmtCal(item.calories)} kcal`,
+                              item.protein_grams != null && `${fmtGrams(item.protein_grams)}g prot`,
+                              item.carbs_grams != null && `${fmtGrams(item.carbs_grams)}g carbs`,
+                              item.fat_grams != null && `${fmtGrams(item.fat_grams)}g grasa`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {[
-                            item.calories != null && `${fmtCal(item.calories)} kcal`,
-                            item.protein_grams != null && `${fmtGrams(item.protein_grams)}g prot`,
-                            item.carbs_grams != null && `${fmtGrams(item.carbs_grams)}g carbs`,
-                            item.fat_grams != null && `${fmtGrams(item.fat_grams)}g grasa`,
-                          ].filter(Boolean).join(" · ")}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Tags */}
               {meal.tags.length > 0 && (
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium">Tags</h4>
                   <div className="flex flex-wrap gap-1">
                     {meal.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">{tag}</Badge>
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Notas */}
               {meal.notes && (
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium">Notas</h4>
@@ -150,5 +233,69 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function MealPhotoGallery({
+  photos,
+  photoToItems,
+  onPhotoSelect,
+}: {
+  photos: MealPhoto[];
+  photoToItems: Map<string, string[]>;
+  onPhotoSelect: (url: string | null) => void;
+}) {
+  const [selected, setSelected] = useState(0);
+  const primary = photos.find((p) => p.is_primary);
+  const sorted = primary ? [primary, ...photos.filter((p) => p.id !== primary.id)] : photos;
+
+  function handleSelect(index: number) {
+    setSelected(index);
+    const photo = sorted[index];
+    onPhotoSelect(photoToItems.has(photo.url) ? photo.url : null);
+  }
+
+  if (sorted.length === 1) {
+    return (
+      <img
+        src={sorted[0].url}
+        alt=""
+        className="w-full rounded-md object-cover max-h-56 cursor-pointer"
+        onClick={() => handleSelect(0)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <img
+        src={sorted[selected].url}
+        alt=""
+        className="w-full rounded-md object-cover max-h-56"
+      />
+      <div className="flex gap-1.5 overflow-x-auto">
+        {sorted.map((photo, i) => {
+          const hasItems = photoToItems.has(photo.url);
+          return (
+            <button
+              key={photo.id}
+              type="button"
+              onClick={() => handleSelect(i)}
+              className={`relative size-12 shrink-0 rounded overflow-hidden border-2 transition-colors ${
+                i === selected ? "border-primary" : "border-transparent"
+              }`}
+            >
+              <img src={photo.url} alt="" className="size-full object-cover" />
+              {photo.is_primary && (
+                <Star className="absolute top-0.5 left-0.5 size-3 fill-yellow-400 text-yellow-400" />
+              )}
+              {hasItems && (
+                <div className="absolute bottom-0.5 right-0.5 size-2 rounded-full bg-primary" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

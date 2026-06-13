@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useCreateMeal } from "@/lib/hooks/use-meals";
 import { MealForm } from "@/components/meal-form";
@@ -20,10 +20,6 @@ interface MealFormSheetProps {
 export function MealFormSheet({ open, onOpenChange }: MealFormSheetProps) {
   const mutation = useCreateMeal();
   const [formKey, setFormKey] = useState(0);
-
-  useEffect(() => {
-    if (open) setFormKey((k) => k + 1);
-  }, [open]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

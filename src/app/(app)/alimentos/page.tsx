@@ -138,7 +138,7 @@ export default function AlimentosPage() {
                 <DraggableFoodRow
                   key={food.id}
                   food={food}
-                  isInBuilder={builder.foodIdsInBuilder.has(food.id)}
+                  isInBuilder={builder.open && builder.foodIdsInBuilder.has(food.id)}
                   disableDrag={!!isMobile}
                   onAddToBuilder={handleAddToBuilder}
                   onView={(id) => setViewingFoodId(id)}

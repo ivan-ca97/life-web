@@ -1,5 +1,7 @@
 import type { PaginatedResponse } from "./api";
 
+export type MeasurementMethod = "weighed_raw" | "weighed_cooked" | "label" | "standard_portion" | "photo_estimate" | "visual_estimate";
+
 export interface MealItem {
   id: string;
   food_id: string;
@@ -13,7 +15,15 @@ export interface MealItem {
   carbs_grams: number | null;
   fat_grams: number | null;
   fiber_grams: number | null;
+  measurement_method?: string;
   notes: string;
+}
+
+export interface MealPhoto {
+  id: string;
+  url: string;
+  is_primary: boolean;
+  meal_item_id?: string;
 }
 
 export interface Meal {
@@ -21,7 +31,7 @@ export interface Meal {
   date: string;
   type: string;
   name: string;
-  photo_url: string;
+  photos: MealPhoto[];
   eaten_at?: string;
   calories?: number;
   protein_grams?: number;
@@ -41,14 +51,21 @@ export interface MealItemRequest {
   food_id: string;
   quantity: number;
   unit: string;
+  measurement_method?: string;
   notes?: string;
+}
+
+export interface MealPhotoRequest {
+  url: string;
+  is_primary: boolean;
+  meal_item_id?: string;
 }
 
 export interface CreateMealRequest {
   date: string;
   type: string;
   name?: string;
-  photo_url: string;
+  photos?: MealPhotoRequest[];
   eaten_at?: string;
   calories?: number;
   protein_grams?: number;

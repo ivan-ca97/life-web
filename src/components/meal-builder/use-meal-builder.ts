@@ -6,7 +6,9 @@ import { useCreateMeal, useMealPreview } from "@/lib/hooks/use-meals";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Food } from "@/lib/types/food";
-import type { CreateMealRequest } from "@/lib/types/meal";
+import { getAvailableUnits } from "@/lib/food-units";
+import type { CreateMealRequest, MealPhotoRequest } from "@/lib/types/meal";
+import type { UploadedPhoto } from "@/lib/hooks/use-media";
 
 export interface BuilderItem {
   food_id: string;
@@ -16,6 +18,8 @@ export interface BuilderItem {
   food_base_unit: string;
   food_base_quantity: number;
   food_conversion_units: string[];
+  measurement_method: string;
+  photos: UploadedPhoto[];
   notes: string;
 }
 
@@ -25,6 +29,7 @@ export interface MealMeta {
   eaten_time?: string;
   notes?: string;
   tags?: string[];
+  photos?: UploadedPhoto[];
 }
 
 export function useMealBuilder() {
@@ -45,7 +50,9 @@ export function useMealBuilder() {
           unit: "g",
           food_base_unit: food.base_unit,
           food_base_quantity: food.base_quantity,
-          food_conversion_units: food.conversions.map((c) => c.unit),
+          food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),
+          measurement_method: "",
+          photos: [],
           notes: "",
         },
       ];
@@ -98,11 +105,14 @@ export function useMealBuilder() {
 
   const saveMeal = useCallback(
     (meta: MealMeta) => {
+      const photoReqs: MealPhotoRequest[] | undefined = meta.photos?.length
+        ? meta.photos.map((p) => ({ url: p.url, is_primary: p.is_primary }))
+        : undefined;
       const req: CreateMealRequest = {
         date: globalDate,
         type: meta.type,
         name: meta.name || undefined,
-        photo_url: "",
+        photos: photoReqs,
         eaten_at: meta.eaten_time
           ? `${globalDate}T${meta.eaten_time}:00Z`
           : undefined,
@@ -111,6 +121,7 @@ export function useMealBuilder() {
           food_id: i.food_id,
           quantity: Number(i.quantity) || 0,
           unit: i.unit,
+          measurement_method: i.measurement_method || undefined,
           notes: i.notes || undefined,
         })),
         notes: meta.notes ?? "",

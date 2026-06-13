@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useDate } from "@/lib/date/context";
-import { Plus, Pencil, Trash2, Eye, Flame, Beef, Wheat, Droplets, Leaf } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Flame, Beef, Wheat, Droplets, Leaf, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useMeals, useDeleteMeal } from "@/lib/hooks/use-meals";
 import { useDailySummary } from "@/lib/hooks/use-daily-summary";
@@ -105,8 +105,21 @@ export default function ComidasPage() {
         <>
           <Card>
             <CardContent className="p-0 divide-y divide-border">
-              {data.items.map((meal) => (
+              {(() => {
+                const anyHasPhotos = data.items.some((m) => m.photos.length > 0);
+                return data.items.map((meal) => {
+                  const primaryPhoto = meal.photos.find((p) => p.is_primary) ?? meal.photos[0];
+                  return (
                 <div key={meal.id} className="flex items-center gap-4 px-4 py-3">
+                  {anyHasPhotos && (
+                    primaryPhoto ? (
+                      <div className="size-16 shrink-0 rounded-md overflow-hidden">
+                        <img src={primaryPhoto.url} alt="" className="size-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="size-16 shrink-0" />
+                    )
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{meal.type}</Badge>
@@ -173,7 +186,9 @@ export default function ComidasPage() {
                     )}
                   </div>
                 </div>
-              ))}
+                  );
+                });
+              })()}
             </CardContent>
           </Card>
           <PaginationControls
