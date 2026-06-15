@@ -241,7 +241,7 @@ function DayPopoverContent({
 }
 
 export default function CalendarioPage() {
-  const { setDate } = useDate();
+  const { date: selectedDate, setDate } = useDate();
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
 
   const from = format(startOfMonth(viewMonth), "yyyy-MM-dd");
@@ -334,6 +334,7 @@ export default function CalendarioPage() {
                   const status = getDayStatus(summary, dateStr, today, firstDataDate);
                   const cfg = statusConfig[status];
                   const isToday = dateStr === todayStr;
+                  const isSelected = dateStr === selectedDate;
 
                   return (
                     <Popover key={dateStr}>
@@ -344,6 +345,7 @@ export default function CalendarioPage() {
                               "relative aspect-square rounded-md flex flex-col items-center justify-center text-sm transition-colors hover:bg-muted/80 cursor-pointer",
                               cfg.bg,
                               cfg.dot && "ring-1 " + cfg.ring,
+                              isSelected && !isToday && "ring-2 ring-primary/50 bg-primary/10 font-semibold",
                               isToday && "font-bold ring-2 ring-primary",
                               (status === "future" || status === "no_tracking") && "text-muted-foreground"
                             )}

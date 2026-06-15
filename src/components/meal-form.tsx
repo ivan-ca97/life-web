@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDate } from "@/lib/date/context";
 import {
   DndContext,
   DragOverlay,
-  useDraggable,
   useDroppable,
   PointerSensor,
   useSensor,
@@ -14,7 +13,14 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { X, ChevronDown, ChevronRight, Loader2, ImagePlus, Star } from "lucide-react";
+import {
+  SortableContext,
+  useSortable,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { X, ChevronDown, ChevronRight, Loader2, ImagePlus, Star, Clock } from "lucide-react";
 import { addDays, format, parse, differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,18 +32,21 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { FoodSearchCombobox } from "@/components/food-search-combobox";
 import { TagInput } from "@/components/tag-input";
 import { MacroBar } from "@/components/macro-bar";
+import { useQueries } from "@tanstack/react-query";
 import { useMealPreview } from "@/lib/hooks/use-meals";
+import * as foodsApi from "@/lib/api/foods";
 import { useMealTags } from "@/lib/hooks/use-tags";
 import type { Meal, MealItemRequest, MealPhotoRequest } from "@/lib/types/meal";
 import type { Food } from "@/lib/types/food";
 import { useMediaUpload, type UploadedPhoto } from "@/lib/hooks/use-media";
-import { getAvailableUnits } from "@/lib/food-units";
+import { getAvailableUnits, isMetricUnit } from "@/lib/food-units";
 import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { toast } from "sonner";
@@ -95,6 +104,61 @@ interface MealFormProps {
   isLoading: boolean;
 }
 
+function parseTimeFromFilename(filename: string): { time: string; date: string } | null {
+  const match = filename.match(/(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/);
+  if (!match) return null;
+  const [, y, mo, d, h, mi, s] = match;
+  const hour = Number(h);
+  const minute = Number(mi);
+  if (hour > 23 || minute > 59 || Number(mo) > 12 || Number(d) > 31) return null;
+
+  // Google Pixel (PXL_) stores UTC timestamps in filenames — convert to local
+  if (/^PXL_/i.test(filename)) {
+    const utc = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), hour, minute, Number(s)));
+    return { time: format(utc, "HH:mm"), date: format(utc, "yyyy-MM-dd") };
+  }
+
+  return { time: `${h}:${mi}`, date: `${y}-${mo}-${d}` };
+}
+
+async function parseTimeFromExif(file: File): Promise<{ time: string; date: string } | null> {
+  try {
+    const { default: exifr } = await import("exifr");
+    const tags = await exifr.parse(file, { pick: ["DateTimeOriginal", "CreateDate"] });
+    const dt: Date | undefined = tags?.DateTimeOriginal ?? tags?.CreateDate;
+    if (!(dt instanceof Date) || isNaN(dt.getTime())) return null;
+    return { time: format(dt, "HH:mm"), date: format(dt, "yyyy-MM-dd") };
+  } catch {
+    return null;
+  }
+}
+
+async function getEarliestTimeFromFiles(files: File[]): Promise<{ time: string; date: string; filename: string } | null> {
+  let earliest: { time: string; date: string; filename: string } | null = null;
+
+  // First pass: try filename parsing (sync, fast)
+  for (const f of files) {
+    const parsed = parseTimeFromFilename(f.name);
+    if (!parsed) continue;
+    const key = `${parsed.date}T${parsed.time}`;
+    if (!earliest || key < `${earliest.date}T${earliest.time}`) {
+      earliest = { ...parsed, filename: f.name };
+    }
+  }
+  if (earliest) return earliest;
+
+  // Fallback: read EXIF metadata
+  for (const f of files) {
+    const parsed = await parseTimeFromExif(f);
+    if (!parsed) continue;
+    const key = `${parsed.date}T${parsed.time}`;
+    if (!earliest || key < `${earliest.date}T${earliest.time}`) {
+      earliest = { ...parsed, filename: f.name };
+    }
+  }
+  return earliest;
+}
+
 function toOptNum(val: string): number | undefined {
   if (val === "") return undefined;
   const n = Number(val);
@@ -104,25 +168,33 @@ function toOptNum(val: string): number | undefined {
 
 /* ---------- Drag & Drop sub-components ---------- */
 
-function DraggablePhoto({
+function SortablePhoto({
   url,
   isPrimary,
   onSetPrimary,
   onRemove,
+  idPrefix = "photo",
 }: {
   url: string;
   isPrimary: boolean;
   onSetPrimary: () => void;
   onRemove: () => void;
+  idPrefix?: string;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `photo-${url}`,
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `${idPrefix}-${url}`,
     data: { url },
   });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <div
       ref={setNodeRef}
+      style={style}
       {...listeners}
       {...attributes}
       className={`relative size-20 rounded-md overflow-hidden border cursor-grab active:cursor-grabbing touch-none ${
@@ -183,6 +255,7 @@ function DroppableItemCard({
 /* ---------- Main form ---------- */
 
 export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) {
+  const isEditing = !!defaultValues;
   const { date: globalDate } = useDate();
   const [tags, setTags] = useState<string[]>(defaultValues?.tags ?? []);
   const [photos, setPhotos] = useState<UploadedPhoto[]>(
@@ -222,6 +295,44 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     })) ?? []
   );
 
+  /* Fetch full food data for edit mode so unit selects have all options */
+  const editFoodIds = useMemo(
+    () => (defaultValues ? [...new Set(defaultValues.items.map((i) => i.food_id))] : []),
+    [defaultValues]
+  );
+  const foodQueries = useQueries({
+    queries: editFoodIds.map((id) => ({
+      queryKey: ["foods", id],
+      queryFn: () => foodsApi.getFood(id),
+      enabled: editFoodIds.length > 0,
+      staleTime: Infinity,
+    })),
+  });
+  const [foodsPatched, setFoodsPatched] = useState(false);
+  useEffect(() => {
+    if (foodsPatched) return;
+    if (!editFoodIds.length) return;
+    if (foodQueries.some((q) => q.isLoading)) return;
+    const foodMap = new Map(
+      foodQueries.filter((q) => q.data).map((q) => [q.data!.id, q.data!])
+    );
+    if (foodMap.size === 0) return;
+    setItems((prev) =>
+      prev.map((item) => {
+        const food = foodMap.get(item.food_id);
+        if (!food) return item;
+        const allUnits = getAvailableUnits(food);
+        return {
+          ...item,
+          food_base_unit: food.base_unit,
+          food_base_quantity: food.base_quantity,
+          food_conversion_units: allUnits.filter((u) => u !== food.base_unit),
+        };
+      })
+    );
+    setFoodsPatched(true);
+  }, [foodQueries, editFoodIds, foodsPatched]);
+
   /* Photo upload */
   const { uploadFiles, uploading, progress } = useMediaUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -239,23 +350,62 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
     setActiveDragUrl(null);
-    if (!e.over) return;
+    if (!e.over || e.active.id === e.over.id) return;
     const url = (e.active.data.current as { url: string })?.url;
+    if (!url) return;
+    const activeId = e.active.id.toString();
     const overId = e.over.id.toString();
-    if (!url || !overId.startsWith("item-drop-")) return;
-    const itemIndex = Number(overId.replace("item-drop-", ""));
-    if (isNaN(itemIndex)) return;
-    setItems((prev) => {
-      const item = prev[itemIndex];
-      if (item.associatedPhotoUrls.includes(url)) return prev;
-      const updated = [...prev];
-      updated[itemIndex] = {
-        ...item,
-        associatedPhotoUrls: [...item.associatedPhotoUrls, url],
-        primaryPhotoUrl: item.primaryPhotoUrl ?? url,
-      };
-      return updated;
-    });
+
+    // Reorder item photos
+    const itemMatch = activeId.match(/^item-(\d+)-photo-/);
+    if (itemMatch && overId.startsWith(`item-${itemMatch[1]}-photo-`)) {
+      const itemIndex = Number(itemMatch[1]);
+      const overUrl = (e.over.data.current as { url: string })?.url;
+      if (!overUrl) return;
+      setItems((prev) => {
+        const item = prev[itemIndex];
+        const oldIdx = item.associatedPhotoUrls.indexOf(url);
+        const newIdx = item.associatedPhotoUrls.indexOf(overUrl);
+        if (oldIdx === -1 || newIdx === -1) return prev;
+        const updated = [...prev];
+        updated[itemIndex] = {
+          ...item,
+          associatedPhotoUrls: arrayMove(item.associatedPhotoUrls, oldIdx, newIdx),
+        };
+        return updated;
+      });
+      return;
+    }
+
+    // Reorder meal-level photos
+    if (overId.startsWith("photo-")) {
+      const overUrl = (e.over.data.current as { url: string })?.url;
+      if (!overUrl) return;
+      setPhotos((prev) => {
+        const oldIndex = prev.findIndex((p) => p.url === url);
+        const newIndex = prev.findIndex((p) => p.url === overUrl);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+      return;
+    }
+
+    // Drop photo onto item card
+    if (overId.startsWith("item-drop-")) {
+      const itemIndex = Number(overId.replace("item-drop-", ""));
+      if (isNaN(itemIndex)) return;
+      setItems((prev) => {
+        const item = prev[itemIndex];
+        if (item.associatedPhotoUrls.includes(url)) return prev;
+        const updated = [...prev];
+        updated[itemIndex] = {
+          ...item,
+          associatedPhotoUrls: [...item.associatedPhotoUrls, url],
+          primaryPhotoUrl: item.primaryPhotoUrl ?? url,
+        };
+        return updated;
+      });
+    }
   }, []);
 
   /* Preview */
@@ -295,9 +445,13 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     return preview?.[field] ?? 0;
   }
 
+  const [timeSuggestion, setTimeSuggestion] = useState<{ time: string; date: string; filename: string } | null>(null);
+
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<MealFormValues>({
     defaultValues: {
@@ -320,6 +474,15 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       ["image/jpeg", "image/png", "image/webp"].includes(f.type)
     );
     if (arr.length === 0) return;
+
+    getEarliestTimeFromFiles(arr).then((detected) => {
+      if (!detected) return;
+      const currentTime = watch("eaten_time");
+      const referenceTime = timeSuggestion?.time ?? currentTime;
+      if (referenceTime && referenceTime !== "00:00" && detected.time >= referenceTime) return;
+      setTimeSuggestion(detected);
+    });
+
     try {
       const urls = await uploadFiles(arr);
       const newPhotos: UploadedPhoto[] = urls.map((url) => ({
@@ -381,12 +544,15 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
   /* --- Item handlers --- */
 
   function handleAddFood(food: Food) {
+    const defaultQty = isMetricUnit(food.base_unit)
+      ? Math.max(food.base_quantity, 100)
+      : food.base_quantity;
     setItems([
       ...items,
       {
         food_id: food.id,
         food_name: food.name,
-        quantity: String(food.base_quantity),
+        quantity: String(defaultQty),
         unit: food.base_unit,
         food_base_unit: food.base_unit,
         food_base_quantity: food.base_quantity,
@@ -425,9 +591,8 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       allPhotos.push({ url: p.url, is_primary: p.is_primary });
     }
     for (const item of items) {
-      if (!item.item_id) continue;
       for (const url of item.associatedPhotoUrls) {
-        allPhotos.push({ url, is_primary: url === item.primaryPhotoUrl, meal_item_id: item.item_id });
+        allPhotos.push({ url, is_primary: url === item.primaryPhotoUrl, item_food_id: item.food_id });
       }
     }
 
@@ -459,8 +624,33 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl">
-        {/* Tipo + Hora */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Fecha + Hora (edicion) o Tipo + Hora (creacion) */}
+        {isEditing && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Fecha</Label>
+              <Input id="date" type="date" {...register("date", { required: "La fecha es obligatoria" })} />
+              {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Hora</Label>
+              <div className="flex items-center gap-1">
+                <Input type="time" className="flex-1" {...register("eaten_time")} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className={dayOffset === 1 ? "text-primary" : ""}
+                  onClick={() => setDayOffset(dayOffset === 1 ? 0 : 1)}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+              {dayOffset === 1 && <p className="text-xs text-muted-foreground">Dia siguiente</p>}
+            </div>
+          </div>
+        )}
+        <div className={isEditing ? "grid grid-cols-1 gap-4" : "grid grid-cols-2 gap-4"}>
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
             <Input
@@ -470,22 +660,24 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
             />
             {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
           </div>
-          <div className="space-y-2">
-            <Label>Hora</Label>
-            <div className="flex items-center gap-1">
-              <Input type="time" className="flex-1" {...register("eaten_time")} />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                className={dayOffset === 1 ? "text-primary" : ""}
-                onClick={() => setDayOffset(dayOffset === 1 ? 0 : 1)}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label>Hora</Label>
+              <div className="flex items-center gap-1">
+                <Input type="time" className="flex-1" {...register("eaten_time")} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className={dayOffset === 1 ? "text-primary" : ""}
+                  onClick={() => setDayOffset(dayOffset === 1 ? 0 : 1)}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+              {dayOffset === 1 && <p className="text-xs text-muted-foreground">Dia siguiente</p>}
             </div>
-            {dayOffset === 1 && <p className="text-xs text-muted-foreground">Dia siguiente</p>}
-          </div>
+          )}
         </div>
 
         {/* Macros */}
@@ -532,163 +724,87 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
           />
         </div>
 
-        {/* Alimentos */}
-        <div className="space-y-3">
-          <Label>Alimentos</Label>
-          {items.map((item, index) => (
-            <DroppableItemCard key={index} id={`item-drop-${index}`} isDragging={!!activeDragUrl}>
-              <CardContent className="p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{item.food_name}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => handleRemoveItem(index)}
-                  >
-                    <X className="size-3" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-xs">Cantidad</Label>
-                    <Input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleItemChange(index, "quantity", e.target.value.replace(/^0+(?=\d)/, ""))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Unidad</Label>
-                    <Select
-                      value={item.unit}
-                      onValueChange={(v) => handleItemChange(index, "unit", v ?? item.unit)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {item.food_base_unit && (
-                          <SelectItem value={item.food_base_unit}>{item.food_base_unit}</SelectItem>
-                        )}
-                        {item.food_conversion_units.map((u) => (
-                          <SelectItem key={u} value={u}>
-                            {u}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Metodo</Label>
-                    <Select
-                      value={item.measurement_method}
-                      onValueChange={(v) => handleItemChange(index, "measurement_method", v ?? "")}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="—">
-                          {getMethodLabel(item.measurement_method) || "—"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">—</SelectItem>
-                        {MEASUREMENT_METHODS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Notas</Label>
-                    <Input
-                      value={item.notes}
-                      onChange={(e) => handleItemChange(index, "notes", e.target.value)}
-                    />
-                  </div>
-                </div>
-                {item.food_base_quantity > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Porcion: {item.food_base_quantity} {item.food_base_unit}
-                  </p>
-                )}
-                {(() => {
-                  const pi = preview?.items?.[index];
-                  if (!pi) return null;
-                  const parts: string[] = [];
-                  if (pi.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
-                  if (pi.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
-                  if (pi.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
-                  if (pi.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
-                  if (pi.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
-                  if (parts.length === 0) return null;
-                  return <p className="text-xs text-muted-foreground">{parts.join(" · ")}</p>;
-                })()}
-                {item.associatedPhotoUrls.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.associatedPhotoUrls.map((url) => {
-                      const isItemPrimary = url === item.primaryPhotoUrl;
-                      return (
-                        <div key={url} className="relative size-20 rounded-md overflow-hidden border">
-                          <img src={url} alt="" className="size-full object-cover" />
-                          <button
-                            type="button"
-                            className={`absolute top-0.5 left-0.5 p-0.5 rounded-sm transition-colors ${
-                              isItemPrimary ? "text-yellow-400" : "text-white/50 hover:text-yellow-400"
-                            }`}
-                            onClick={() => handleSetItemPrimary(index, url)}
-                            title="Foto principal del item"
-                          >
-                            <Star className={`size-3.5 ${isItemPrimary ? "fill-yellow-400" : ""}`} />
-                          </button>
-                          <button
-                            type="button"
-                            className="absolute top-0.5 right-0.5 p-0.5 rounded-sm text-white/50 hover:text-red-400 transition-colors"
-                            onClick={() => handleDisassociatePhoto(index, url)}
-                          >
-                            <X className="size-3.5" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </DroppableItemCard>
-          ))}
-          <FoodSearchCombobox
-            onSelect={handleAddFood}
-            excludeIds={items.map((i) => i.food_id)}
-          />
-        </div>
-
         {/* Fotos */}
         <div className="space-y-2">
           <Label>Fotos</Label>
           {photos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {photos.map((photo, index) => (
-                <DraggablePhoto
-                  key={photo.url}
-                  url={photo.url}
-                  isPrimary={photo.is_primary}
-                  onSetPrimary={() => handleSetPrimary(index)}
-                  onRemove={() => handleRemovePhoto(index)}
-                />
-              ))}
-            </div>
+            <SortableContext
+              items={photos.map((p) => `photo-${p.url}`)}
+              strategy={horizontalListSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-2">
+                {photos.map((photo, index) => (
+                  <SortablePhoto
+                    key={photo.url}
+                    url={photo.url}
+                    isPrimary={photo.is_primary}
+                    onSetPrimary={() => handleSetPrimary(index)}
+                    onRemove={() => handleRemovePhoto(index)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
           )}
           {items.length > 0 && photos.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              Arrastra una foto a un alimento para asociarla
+              Arrastra una foto a un alimento para asociarla, o entre fotos para reordenar
             </p>
           )}
+          {timeSuggestion && (() => {
+            const mealDate = watch("date");
+            const photoDate = timeSuggestion.date;
+            const diffDays = differenceInCalendarDays(
+              parse(photoDate, "yyyy-MM-dd", new Date()),
+              parse(mealDate, "yyyy-MM-dd", new Date())
+            );
+            const isNextDay = diffDays === 1;
+            const isSameDay = diffDays === 0;
+            const isOdd = !isSameDay && !isNextDay;
+
+            return (
+              <div className={`flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+                isOdd ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/50"
+              }`}>
+                <Clock className="size-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">
+                  Hora detectada: <strong className="text-foreground">{timeSuggestion.time}</strong>
+                  {isNextDay && <span className="ml-1 text-primary">(dia siguiente)</span>}
+                  {isOdd && (
+                    <span className="ml-1 text-amber-500">
+                      (foto del {photoDate}, {diffDays > 0 ? `${diffDays} dias despues` : `${Math.abs(diffDays)} dias antes`})
+                    </span>
+                  )}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => {
+                    setValue("eaten_time", timeSuggestion.time);
+                    if (isNextDay) {
+                      setDayOffset(1);
+                    } else if (isSameDay) {
+                      setDayOffset(0);
+                    } else if (isEditing) {
+                      setValue("date", photoDate);
+                      setDayOffset(0);
+                    }
+                    setTimeSuggestion(null);
+                  }}
+                >
+                  Aplicar
+                </Button>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => setTimeSuggestion(null)}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            );
+          })()}
           <div
             onDrop={(e) => {
               e.preventDefault();
@@ -731,6 +847,150 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
               if (e.target.files) handleFileUpload(e.target.files);
               e.target.value = "";
             }}
+          />
+        </div>
+
+        {/* Alimentos */}
+        <div className="space-y-3">
+          <Label>Alimentos</Label>
+          {items.map((item, index) => (
+            <DroppableItemCard key={index} id={`item-drop-${index}`} isDragging={!!activeDragUrl}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{item.food_name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => handleRemoveItem(index)}
+                  >
+                    <X className="size-3" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">Cantidad</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleItemChange(index, "quantity", e.target.value.replace(/^0+(?=\d)/, ""))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Unidad</Label>
+                    <Select
+                      value={item.unit}
+                      onValueChange={(v) => {
+                        const newUnit = v ?? item.unit;
+                        const updated = [...items];
+                        updated[index] = {
+                          ...updated[index],
+                          unit: newUnit,
+                          quantity: isMetricUnit(newUnit)
+                            ? String(Math.max(item.food_base_quantity, 100))
+                            : "1",
+                        };
+                        setItems(updated);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(() => {
+                          const portionUnits = item.food_conversion_units.filter((u) => !isMetricUnit(u));
+                          const metricUnits = [item.food_base_unit, ...item.food_conversion_units.filter((u) => isMetricUnit(u))];
+                          return (
+                            <>
+                              {portionUnits.map((u) => (
+                                <SelectItem key={u} value={u}>{u}</SelectItem>
+                              ))}
+                              {portionUnits.length > 0 && <SelectSeparator />}
+                              {metricUnits.map((u) => (
+                                <SelectItem key={u} value={u}>{u}</SelectItem>
+                              ))}
+                            </>
+                          );
+                        })()}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Metodo</Label>
+                    <Select
+                      value={item.measurement_method}
+                      onValueChange={(v) => handleItemChange(index, "measurement_method", v ?? "")}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="—">
+                          {getMethodLabel(item.measurement_method) || "—"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="" label="—">—</SelectItem>
+                        {MEASUREMENT_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value} label={m.label}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Notas</Label>
+                    <Input
+                      value={item.notes}
+                      onChange={(e) => handleItemChange(index, "notes", e.target.value)}
+                    />
+                  </div>
+                </div>
+                {item.food_base_quantity > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Porcion: {item.food_base_quantity} {item.food_base_unit}
+                  </p>
+                )}
+                {(() => {
+                  const pi = preview?.items?.[index];
+                  if (!pi) return null;
+                  const parts: string[] = [];
+                  if (pi.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
+                  if (pi.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
+                  if (pi.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
+                  if (pi.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
+                  if (pi.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
+                  if (parts.length === 0) return null;
+                  return <p className="text-xs text-muted-foreground">{parts.join(" · ")}</p>;
+                })()}
+                {item.associatedPhotoUrls.length > 0 && (
+                  <SortableContext
+                    items={item.associatedPhotoUrls.map((u) => `item-${index}-photo-${u}`)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {item.associatedPhotoUrls.map((url) => (
+                        <SortablePhoto
+                          key={url}
+                          url={url}
+                          idPrefix={`item-${index}-photo`}
+                          isPrimary={url === item.primaryPhotoUrl}
+                          onSetPrimary={() => handleSetItemPrimary(index, url)}
+                          onRemove={() => handleDisassociatePhoto(index, url)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                )}
+              </CardContent>
+            </DroppableItemCard>
+          ))}
+          <FoodSearchCombobox
+            onSelect={handleAddFood}
+            excludeIds={items.map((i) => i.food_id)}
           />
         </div>
 

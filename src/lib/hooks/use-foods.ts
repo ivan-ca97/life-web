@@ -5,6 +5,7 @@ import type { CreateFoodRequest, UpdateFoodRequest } from "@/lib/types/food";
 export function useFoods(params: {
   q?: string;
   tag?: string;
+  sort?: string;
   limit?: number;
   offset?: number;
 }) {

@@ -6,6 +6,8 @@ const METRIC_UNITS: Record<string, string[]> = {
   unit: ["u"],
 };
 
+const ALL_METRIC = new Set([...METRIC_UNITS.mass, ...METRIC_UNITS.volume, "u"]);
+
 export function getAvailableUnits(food: Food): string[] {
   const units: string[] = [];
 
@@ -34,4 +36,8 @@ export function getAvailableUnits(food: Food): string[] {
   }
 
   return units;
+}
+
+export function isMetricUnit(unit: string): boolean {
+  return ALL_METRIC.has(unit);
 }

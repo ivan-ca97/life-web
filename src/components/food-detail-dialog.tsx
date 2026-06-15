@@ -45,6 +45,13 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
           </>
         ) : (
           <>
+            {food.photo_url && (
+              <img
+                src={food.photo_url}
+                alt=""
+                className="w-full rounded-md object-cover max-h-56 -mt-2"
+              />
+            )}
             <DialogHeader>
               <DialogTitle>{food.name}</DialogTitle>
               <DialogDescription className="flex items-center gap-2">

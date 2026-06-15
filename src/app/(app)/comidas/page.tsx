@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useDate } from "@/lib/date/context";
-import { Plus, Pencil, Trash2, Eye, Flame, Beef, Wheat, Droplets, Leaf, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Flame, Beef, Wheat, Droplets, Leaf, ImageIcon, ListTree } from "lucide-react";
 import { toast } from "sonner";
 import { useMeals, useDeleteMeal } from "@/lib/hooks/use-meals";
 import { useDailySummary } from "@/lib/hooks/use-daily-summary";
@@ -16,6 +16,8 @@ import { EmptyState } from "@/components/empty-state";
 import { ListSkeleton } from "@/components/loading-skeleton";
 import { MealFormSheet } from "@/components/meal-form-sheet";
 import { MealDetailDialog } from "@/components/meal-detail-dialog";
+import { MealEditSheet } from "@/components/meal-edit-sheet";
+import { DailyBreakdownDialog } from "@/components/daily-breakdown-dialog";
 import { SummaryCard } from "@/components/summary-card";
 import { MacroBar } from "@/components/macro-bar";
 import { fmtCal, fmtGrams } from "@/lib/format";
@@ -27,6 +29,8 @@ export default function ComidasPage() {
   useEffect(() => { setOffset(0); }, [date]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [viewingMealId, setViewingMealId] = useState<string | undefined>();
+  const [editingMealId, setEditingMealId] = useState<string | undefined>();
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const limit = 20;
 
   const { data, isLoading } = useMeals({ date, limit, offset });
@@ -52,8 +56,24 @@ export default function ComidasPage() {
         )}
       </div>
 
+      {summary && summary.meals.count > 0 && summary.meals.count > 1 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => setBreakdownOpen(true)}
+        >
+          <ListTree className="size-4" />
+          Desglose del dia
+        </Button>
+      )}
+
       {summary && summary.meals.count > 0 && (
-        <div className="space-y-3">
+        <button
+          type="button"
+          className="w-full text-left space-y-3 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => setBreakdownOpen(true)}
+        >
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             <SummaryCard
               icon={<Flame className="size-5" />}
@@ -91,7 +111,7 @@ export default function ComidasPage() {
             carbs={summary.meals.total_carbs_grams}
             fat={summary.meals.total_fat_grams}
           />
-        </div>
+        </button>
       )}
 
       {isLoading ? (
@@ -168,7 +188,7 @@ export default function ComidasPage() {
                     </Button>
                     {!summary?.closed && (
                       <>
-                        <Button variant="ghost" size="icon-sm" render={<Link href={`/comidas/${meal.id}/editar`} />}>
+                        <Button variant="ghost" size="icon-sm" onClick={() => setEditingMealId(meal.id)}>
                           <Pencil className="size-4" />
                         </Button>
                         <ConfirmDialog
@@ -205,6 +225,14 @@ export default function ComidasPage() {
           open={!!viewingMealId}
           onOpenChange={(open) => { if (!open) setViewingMealId(undefined); }}
           mealId={viewingMealId}
+        />
+      )}
+      <DailyBreakdownDialog open={breakdownOpen} onOpenChange={setBreakdownOpen} date={date} />
+      {editingMealId && (
+        <MealEditSheet
+          open={!!editingMealId}
+          onOpenChange={(open) => { if (!open) setEditingMealId(undefined); }}
+          mealId={editingMealId}
         />
       )}
     </div>

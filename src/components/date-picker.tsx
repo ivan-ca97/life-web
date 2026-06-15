@@ -32,8 +32,8 @@ export function DatePicker({ value, onChange, showTodayButton = false }: DatePic
         <ChevronLeft className="size-4" />
       </Button>
       <Popover>
-        <PopoverTrigger render={<Button variant="outline" className="justify-start text-left font-normal" />}>
-            <CalendarIcon className="mr-2 size-4" />
+        <PopoverTrigger render={<Button variant="outline" className="relative min-w-72 justify-center font-normal" />}>
+            <CalendarIcon className="absolute left-3 size-4" />
             {format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es }).replace(/^./, c => c.toUpperCase())}
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

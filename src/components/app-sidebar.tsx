@@ -12,6 +12,7 @@ import {
   Target,
   CalendarDays,
   Users,
+  UserCog,
   LogOut,
   Moon,
   Sun,
@@ -39,6 +40,7 @@ const navItems = [
   { label: "Peso", href: "/peso", icon: Weight },
   { label: "Estadisticas", href: "/estadisticas", icon: BarChart3 },
   { label: "Metas", href: "/metas", icon: Target },
+  { label: "Perfil", href: "/perfil", icon: UserCog },
   { label: "Usuarios", href: "/usuarios", icon: Users },
 ];
 

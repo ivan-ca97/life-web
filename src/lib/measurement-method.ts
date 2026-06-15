@@ -11,7 +11,7 @@ const METHOD_META: Record<MeasurementMethod, MethodMeta> = {
   weighed_cooked: { label: "Pesado cocido", shortLabel: "Cocido", color: "text-green-500" },
   label: { label: "Etiqueta", shortLabel: "Etiqueta", color: "text-emerald-400" },
   standard_portion: { label: "Porcion estandar", shortLabel: "Porcion", color: "text-blue-400" },
-  photo_estimate: { label: "Estimado por foto", shortLabel: "Foto", color: "text-amber-400" },
+  photo_estimate: { label: "Estimado por foto", shortLabel: "Est.foto", color: "text-amber-400" },
   visual_estimate: { label: "Estimado visual", shortLabel: "Visual", color: "text-orange-400" },
 };
 

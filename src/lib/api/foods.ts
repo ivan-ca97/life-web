@@ -20,12 +20,14 @@ export function createFood(data: CreateFoodRequest): Promise<Food> {
 export function getFoods(params: {
   q?: string;
   tag?: string;
+  sort?: string;
   limit?: number;
   offset?: number;
 }): Promise<FoodPage> {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
   if (params.tag) search.set("tag", params.tag);
+  if (params.sort) search.set("sort", params.sort);
   if (params.limit) search.set("limit", String(params.limit));
   if (params.offset) search.set("offset", String(params.offset));
   return userFetch<FoodPage>(`/foods?${search}`);

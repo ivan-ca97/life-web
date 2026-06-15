@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as exercisesApi from "@/lib/api/exercises";
+import { useDebounce } from "@/hooks/use-debounce";
 import type {
   CreateExerciseRequest,
   UpdateExerciseRequest,
@@ -56,6 +57,16 @@ export function useDeleteExercise() {
       queryClient.invalidateQueries({ queryKey: ["exercises"] });
       queryClient.invalidateQueries({ queryKey: ["daily"] });
     },
+  });
+}
+
+export function useCalorieEstimate(steps: number) {
+  const debounced = useDebounce(steps, 500);
+
+  return useQuery({
+    queryKey: ["calorie-estimate", "steps", debounced],
+    queryFn: () => exercisesApi.estimateCalories({ type: "steps", value: debounced }),
+    enabled: debounced > 0,
   });
 }
 

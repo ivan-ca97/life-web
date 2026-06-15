@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import { Plus, Search, UtensilsCrossed } from "lucide-react";
+import { Plus, Search, UtensilsCrossed, X, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useFoods, useDeleteFood } from "@/lib/hooks/use-foods";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,13 +25,14 @@ import type { Food } from "@/lib/types/food";
 export default function AlimentosPage() {
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState("");
+  const [sort, setSort] = useState("");
   const [offset, setOffset] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingFoodId, setEditingFoodId] = useState<string>();
   const [viewingFoodId, setViewingFoodId] = useState<string>();
   const limit = 20;
 
-  const { data, isLoading } = useFoods({ q: query, tag, limit, offset });
+  const { data, isLoading } = useFoods({ q: query, tag, sort: sort || undefined, limit, offset });
   const deleteMutation = useDeleteFood();
   const builder = useMealBuilder();
   const isMobile = useIsMobile();
@@ -121,6 +122,27 @@ export default function AlimentosPage() {
             setOffset(0);
           }}
         />
+        <Button
+          variant={sort ? "secondary" : "ghost"}
+          size="icon"
+          onClick={() => {
+            setSort(sort === "created_at" ? "" : "created_at");
+            setOffset(0);
+          }}
+          title={sort === "created_at" ? "Ordenar por nombre" : "Ordenar por fecha de creacion"}
+        >
+          <ArrowUpDown className="size-4" />
+        </Button>
+        {(query || tag || sort) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setQuery(""); setTag(""); setSort(""); setOffset(0); }}
+            title="Limpiar filtros"
+          >
+            <X className="size-4" />
+          </Button>
+        )}
       </div>
 
       {isLoading ? (

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { useMeal } from "@/lib/hooks/use-meals";
+import { MealEditSheet } from "@/components/meal-edit-sheet";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { getMethodMeta } from "@/lib/measurement-method";
 import { MacroBar } from "@/components/macro-bar";
@@ -27,6 +27,7 @@ interface MealDetailDialogProps {
 export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialogProps) {
   const { data: meal, isLoading } = useMeal(mealId);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const photoToItems = useMemo(() => {
     if (!meal) return new Map<string, string[]>();
@@ -88,13 +89,13 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <DialogTitle>{meal.name || meal.type}</DialogTitle>
-                <Link
-                  href={`/comidas/${meal.id}/editar`}
+                <button
+                  type="button"
                   className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => setEditOpen(true)}
                 >
                   <Pencil className="size-4" />
-                </Link>
+                </button>
               </div>
               <DialogDescription className="flex items-center gap-2">
                 <Badge variant="outline">{meal.type}</Badge>
@@ -165,7 +166,7 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium">Alimentos</h4>
                   <div className="space-y-2">
-                    {meal.items.map((item) => {
+                    {[...meal.items].sort((a, b) => (b.calories ?? 0) - (a.calories ?? 0)).map((item) => {
                       const method = getMethodMeta(item.measurement_method);
                       const hasPhotos = itemToPhotos.has(item.id);
                       const isHighlighted = highlightedItemIds.has(item.id);
@@ -232,6 +233,16 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
           </>
         )}
       </DialogContent>
+      {editOpen && meal && (
+        <MealEditSheet
+          open={editOpen}
+          onOpenChange={(o) => {
+            setEditOpen(o);
+            if (!o) onOpenChange(false);
+          }}
+          mealId={meal.id}
+        />
+      )}
     </Dialog>
   );
 }

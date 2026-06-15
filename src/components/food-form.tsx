@@ -237,9 +237,9 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
             <SelectValue>{MEASUREMENT_TYPE_LABELS[measurementType]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="mass">Peso (g, kg, mg)</SelectItem>
-            <SelectItem value="volume">Volumen (ml, cl, dl, l)</SelectItem>
-            <SelectItem value="unit">Unidad (u)</SelectItem>
+            <SelectItem value="mass" label="Peso (g, kg, mg)">Peso (g, kg, mg)</SelectItem>
+            <SelectItem value="volume" label="Volumen (ml, cl, dl, l)">Volumen (ml, cl, dl, l)</SelectItem>
+            <SelectItem value="unit" label="Unidad (u)">Unidad (u)</SelectItem>
           </SelectContent>
         </Select>
       </div>

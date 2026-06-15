@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MealFormSheet } from "@/components/meal-form-sheet";
 import { ExerciseFormSheet } from "@/components/exercise-form-sheet";
 import { WeightFormSheet } from "@/components/weight-form-sheet";
+import { DailyBreakdownDialog } from "@/components/daily-breakdown-dialog";
 import type { CorrectionField } from "@/lib/types/daily";
 
 export default function ResumenPage() {
@@ -39,6 +40,7 @@ export default function ResumenPage() {
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [exerciseSheetOpen, setExerciseSheetOpen] = useState(false);
   const [weightSheetOpen, setWeightSheetOpen] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const { data, isLoading } = useDailySummary(date);
   const { data: correction } = useCorrection(date);
   const closeDayMutation = useCloseDay();
@@ -171,16 +173,22 @@ export default function ResumenPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Alimentacion ({data.meals.count} comidas)
+                <button
+                  type="button"
+                  className="hover:underline cursor-pointer"
+                  onClick={() => setBreakdownOpen(true)}
+                >
+                  Alimentacion ({data.meals.count} comidas)
+                </button>
               </CardTitle>
-              {!data.closed && (
-                <CardAction>
+              <CardAction className="flex gap-1">
+                {!data.closed && (
                   <Button variant="outline" size="sm" onClick={() => setMealSheetOpen(true)}>
                     <Plus className="size-4" />
                     Agregar
                   </Button>
-                </CardAction>
-              )}
+                )}
+              </CardAction>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -359,6 +367,7 @@ export default function ResumenPage() {
       <MealFormSheet open={mealSheetOpen} onOpenChange={setMealSheetOpen} />
       <ExerciseFormSheet open={exerciseSheetOpen} onOpenChange={setExerciseSheetOpen} />
       <WeightFormSheet open={weightSheetOpen} onOpenChange={setWeightSheetOpen} defaultDate={date} />
+      <DailyBreakdownDialog open={breakdownOpen} onOpenChange={setBreakdownOpen} date={date} />
     </div>
   );
 }

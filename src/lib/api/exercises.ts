@@ -4,6 +4,8 @@ import type {
   ExercisePage,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  CalorieEstimateRequest,
+  CalorieEstimateResponse,
   ImportResponse,
 } from "@/lib/types/exercise";
 
@@ -42,6 +44,13 @@ export function updateExercise(
 
 export function deleteExercise(id: string): Promise<void> {
   return userFetch<void>(`/exercises/${id}`, { method: "DELETE" });
+}
+
+export function estimateCalories(data: CalorieEstimateRequest): Promise<CalorieEstimateResponse> {
+  return userFetch<CalorieEstimateResponse>("/activity/calorie-estimate", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export function importHevyCsv(file: File): Promise<ImportResponse> {

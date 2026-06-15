@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
 import { useExerciseTags } from "@/lib/hooks/use-tags";
+import { useCalorieEstimate } from "@/lib/hooks/use-exercises";
 import {
   Select,
   SelectContent,
@@ -125,9 +126,13 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
   const exerciseType = watch("type");
   const durationH = watch("duration_h");
   const durationM = watch("duration_m");
+  const stepsRaw = watch("steps");
   const showCardio = ["walking", "running", "cycling"].includes(exerciseType);
   const showSteps = ["walking", "running"].includes(exerciseType);
   const showStrength = exerciseType === "weightlifting";
+
+  const stepsNum = Number(stepsRaw) || 0;
+  const calorieEstimate = useCalorieEstimate(showSteps ? stepsNum : 0);
 
   function onFormSubmit(values: ExerciseFormValues) {
     onSubmit({
@@ -174,7 +179,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
             </SelectTrigger>
             <SelectContent>
               {exerciseTypes.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
+                <SelectItem key={t.value} value={t.value} label={t.label}>
                   {t.label}
                 </SelectItem>
               ))}
@@ -254,6 +259,14 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
         <div className="space-y-2">
           <Label>Pasos</Label>
           <Input type="number" min="0" {...register("steps")} />
+          {calorieEstimate.data && (
+            <p className="text-xs text-muted-foreground">
+              ~{Math.round(calorieEstimate.data.estimated_calories)} kcal estimadas
+              <span className="ml-1 opacity-70">
+                (basado en tu peso de {calorieEstimate.data.weight_kg.toFixed(1)} kg)
+              </span>
+            </p>
+          )}
         </div>
       )}
 

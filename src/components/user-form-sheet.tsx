@@ -154,8 +154,8 @@ export function UserFormSheet({ open, onOpenChange, userId }: UserFormSheetProps
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">Masculino</SelectItem>
-                <SelectItem value="female">Femenino</SelectItem>
+                <SelectItem value="male" label="Masculino">Masculino</SelectItem>
+                <SelectItem value="female" label="Femenino">Femenino</SelectItem>
               </SelectContent>
             </Select>
           </div>

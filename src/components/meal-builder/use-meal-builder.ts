@@ -6,7 +6,7 @@ import { useCreateMeal, useMealPreview } from "@/lib/hooks/use-meals";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Food } from "@/lib/types/food";
-import { getAvailableUnits } from "@/lib/food-units";
+import { getAvailableUnits, isMetricUnit } from "@/lib/food-units";
 import type { CreateMealRequest, MealPhotoRequest } from "@/lib/types/meal";
 import type { UploadedPhoto } from "@/lib/hooks/use-media";
 
@@ -41,13 +41,16 @@ export function useMealBuilder() {
   const addFood = useCallback((food: Food) => {
     setItems((prev) => {
       if (prev.some((i) => i.food_id === food.id)) return prev;
+      const defaultQty = isMetricUnit(food.base_unit)
+        ? Math.max(food.base_quantity, 100)
+        : food.base_quantity;
       return [
         ...prev,
         {
           food_id: food.id,
           food_name: food.name,
-          quantity: "100",
-          unit: "g",
+          quantity: String(defaultQty),
+          unit: food.base_unit,
           food_base_unit: food.base_unit,
           food_base_quantity: food.base_quantity,
           food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),

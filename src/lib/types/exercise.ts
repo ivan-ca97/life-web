@@ -55,6 +55,18 @@ export interface CreateExerciseRequest {
 
 export type UpdateExerciseRequest = Partial<CreateExerciseRequest>;
 
+export interface CalorieEstimateRequest {
+  type: "steps";
+  value: number;
+}
+
+export interface CalorieEstimateResponse {
+  type: string;
+  value: number;
+  estimated_calories: number;
+  weight_kg: number;
+}
+
 export interface ImportResultItem {
   date: string;
   name: string;

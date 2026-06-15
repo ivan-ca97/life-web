@@ -18,6 +18,7 @@ import {
 import { MacroBar } from "@/components/macro-bar";
 import { TagInput } from "@/components/tag-input";
 import { PhotoUpload } from "@/components/photo-upload";
+import { useDate } from "@/lib/date/context";
 import { useMealTags } from "@/lib/hooks/use-tags";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
@@ -53,6 +54,7 @@ export function MealBuilderPanel({
   isDragActive,
 }: MealBuilderPanelProps) {
   const { setNodeRef, isOver } = useDroppable({ id: "meal-builder-drop" });
+  const { date: globalDate } = useDate();
   const [type, setType] = useState("");
   const [name, setName] = useState("");
   const [eatenTime, setEatenTime] = useState("");
@@ -88,7 +90,10 @@ export function MealBuilderPanel({
   return (
     <div ref={setNodeRef} className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Nueva comida</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Nueva comida</h2>
+          <p className="text-xs text-muted-foreground">{globalDate}</p>
+        </div>
         <div className="flex gap-1">
           {items.length > 0 && (
             <Button variant="ghost" size="sm" onClick={onClear}>
@@ -198,9 +203,9 @@ export function MealBuilderPanel({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">—</SelectItem>
+                      <SelectItem value="" label="—">—</SelectItem>
                       {MEASUREMENT_METHODS.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>
+                        <SelectItem key={m.value} value={m.value} label={m.label}>
                           {m.label}
                         </SelectItem>
                       ))}

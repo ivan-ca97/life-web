@@ -59,6 +59,7 @@ export interface MealPhotoRequest {
   url: string;
   is_primary: boolean;
   meal_item_id?: string;
+  item_food_id?: string;
 }
 
 export interface CreateMealRequest {

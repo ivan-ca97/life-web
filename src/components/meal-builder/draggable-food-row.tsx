@@ -47,6 +47,13 @@ export function DraggableFoodRow({
         disableDrag ? "" : "touch-none"
       } ${isDragging ? "opacity-30" : isInBuilder ? "opacity-50" : ""}`}
     >
+      {food.photo_url && (
+        <img
+          src={food.photo_url}
+          alt=""
+          className="size-10 rounded-md object-cover shrink-0"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <button

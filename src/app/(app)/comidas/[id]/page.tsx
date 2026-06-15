@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Star, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MacroBar } from "@/components/macro-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { MealEditSheet } from "@/components/meal-edit-sheet";
 import { CardSkeleton } from "@/components/loading-skeleton";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { getMethodMeta } from "@/lib/measurement-method";
@@ -26,6 +26,7 @@ export default function ComidaDetallePage({
   const { data: meal, isLoading } = useMeal(id);
   const deleteMutation = useDeleteMeal();
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const photoToItems = useMemo(() => {
     if (!meal) return new Map<string, string[]>();
@@ -91,7 +92,7 @@ export default function ComidaDetallePage({
           <h1 className="text-2xl font-semibold">{meal.name}</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`/comidas/${meal.id}/editar`} />}>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4 mr-1" />
               Editar
           </Button>
@@ -141,7 +142,7 @@ export default function ComidaDetallePage({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {meal.items.map((item) => {
+              {[...meal.items].sort((a, b) => (b.calories ?? 0) - (a.calories ?? 0)).map((item) => {
                 const method = getMethodMeta(item.measurement_method);
                 const photos = itemToPhotos.get(item.id);
                 const isHighlighted = highlightedItemIds.has(item.id);
@@ -253,6 +254,12 @@ export default function ComidaDetallePage({
           </CardContent>
         </Card>
       )}
+
+      <MealEditSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        mealId={meal.id}
+      />
     </div>
   );
 }

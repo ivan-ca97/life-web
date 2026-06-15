@@ -19,15 +19,32 @@ interface DateContextValue {
 
 const DateContext = createContext<DateContextValue | null>(null);
 
+const STORAGE_KEY = "life_selected_date";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 function getToday(): string {
   return format(new Date(), "yyyy-MM-dd");
 }
 
+function getInitialDate(): string {
+  if (typeof window === "undefined") return getToday();
+  const stored = sessionStorage.getItem(STORAGE_KEY);
+  if (stored && DATE_RE.test(stored)) return stored;
+  return getToday();
+}
+
 export function DateProvider({ children }: { children: ReactNode }) {
-  const [date, setDate] = useState(getToday);
+  const [date, setDateRaw] = useState(getInitialDate);
+
+  const setDate = useCallback((d: string) => {
+    setDateRaw(d);
+    try { sessionStorage.setItem(STORAGE_KEY, d); } catch {}
+  }, []);
 
   const goToToday = useCallback(() => {
-    setDate(getToday());
+    const today = getToday();
+    setDateRaw(today);
+    try { sessionStorage.setItem(STORAGE_KEY, today); } catch {}
   }, []);
 
   const value = useMemo(
@@ -37,7 +54,7 @@ export function DateProvider({ children }: { children: ReactNode }) {
       isToday: date === getToday(),
       goToToday,
     }),
-    [date, goToToday]
+    [date, setDate, goToToday]
   );
 
   return <DateContext.Provider value={value}>{children}</DateContext.Provider>;
