@@ -7,6 +7,7 @@ export interface User {
   height_cm?: number;
   birth_date?: string;
   sex?: string;
+  photo_url: string;
   created_at: string;
 }
 

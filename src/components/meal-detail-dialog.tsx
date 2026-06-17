@@ -9,6 +9,7 @@ import { MacroBar } from "@/components/macro-bar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ImageIcon, Pencil } from "lucide-react";
+import { PannableImage } from "@/components/pannable-image";
 import {
   Dialog,
   DialogContent,
@@ -87,16 +88,7 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
         ) : (
           <>
             <DialogHeader>
-              <div className="flex items-center justify-between">
-                <DialogTitle>{meal.name || meal.type}</DialogTitle>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Pencil className="size-4" />
-                </button>
-              </div>
+              <DialogTitle>{meal.name || meal.type}</DialogTitle>
               <DialogDescription className="flex items-center gap-2">
                 <Badge variant="outline">{meal.type}</Badge>
                 {meal.eaten_at && (
@@ -107,6 +99,13 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
                     )}
                   </span>
                 )}
+                <button
+                  type="button"
+                  className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-1"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
               </DialogDescription>
             </DialogHeader>
 
@@ -268,10 +267,9 @@ function MealPhotoGallery({
 
   if (sorted.length === 1) {
     return (
-      <img
+      <PannableImage
         src={sorted[0].url}
-        alt=""
-        className="w-full rounded-md object-cover max-h-56 cursor-pointer"
+        className="w-full rounded-md object-cover max-h-56"
         onClick={() => handleSelect(0)}
       />
     );
@@ -279,9 +277,8 @@ function MealPhotoGallery({
 
   return (
     <div className="space-y-2">
-      <img
+      <PannableImage
         src={sorted[selected].url}
-        alt=""
         className="w-full rounded-md object-cover max-h-56"
       />
       <div className="flex gap-1.5 overflow-x-auto">

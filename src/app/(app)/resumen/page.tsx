@@ -33,6 +33,7 @@ import { MealFormSheet } from "@/components/meal-form-sheet";
 import { ExerciseFormSheet } from "@/components/exercise-form-sheet";
 import { WeightFormSheet } from "@/components/weight-form-sheet";
 import { DailyBreakdownDialog } from "@/components/daily-breakdown-dialog";
+import { DailyPhotos } from "@/components/daily-photos";
 import type { CorrectionField } from "@/lib/types/daily";
 
 export default function ResumenPage() {
@@ -362,6 +363,8 @@ export default function ResumenPage() {
               </CardContent>
             </Card>
           )}
+
+          <DailyPhotos date={date} closed={data.closed} />
         </>
       ) : null}
       <MealFormSheet open={mealSheetOpen} onOpenChange={setMealSheetOpen} />

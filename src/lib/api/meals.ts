@@ -16,15 +16,32 @@ export function createMeal(data: CreateMealRequest): Promise<Meal> {
   });
 }
 
-export function getMeals(params: {
+export interface MealFilters {
   date?: string;
+  from?: string;
+  to?: string;
+  type?: string;
+  tag?: string;
+  food_id?: string;
+  min_calories?: number;
+  max_calories?: number;
+  min_protein?: number;
+  max_protein?: number;
+  min_carbs?: number;
+  max_carbs?: number;
+  min_fat?: number;
+  max_fat?: number;
+  min_fiber?: number;
+  max_fiber?: number;
   limit?: number;
   offset?: number;
-}): Promise<MealPage> {
+}
+
+export function getMeals(params: MealFilters): Promise<MealPage> {
   const search = new URLSearchParams();
-  if (params.date) search.set("date", params.date);
-  if (params.limit) search.set("limit", String(params.limit));
-  if (params.offset) search.set("offset", String(params.offset));
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null) search.set(k, String(v));
+  }
   return userFetch<MealPage>(`/meals?${search}`);
 }
 

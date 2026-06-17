@@ -1,13 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as mealsApi from "@/lib/api/meals";
+import type { MealFilters } from "@/lib/api/meals";
 import type { CreateMealRequest, UpdateMealRequest, MealPreviewItem } from "@/lib/types/meal";
 import { useDebounce } from "@/hooks/use-debounce";
 
-export function useMeals(params: {
-  date?: string;
-  limit?: number;
-  offset?: number;
-}) {
+export function useMeals(params: MealFilters) {
   return useQuery({
     queryKey: ["meals", params],
     queryFn: () => mealsApi.getMeals(params),

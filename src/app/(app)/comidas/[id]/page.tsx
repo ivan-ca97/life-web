@@ -14,6 +14,7 @@ import { MealEditSheet } from "@/components/meal-edit-sheet";
 import { CardSkeleton } from "@/components/loading-skeleton";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { getMethodMeta } from "@/lib/measurement-method";
+import { PannableImage } from "@/components/pannable-image";
 import type { MealPhoto } from "@/lib/types/meal";
 
 export default function ComidaDetallePage({
@@ -104,7 +105,7 @@ export default function ComidaDetallePage({
               </Button>
             }
             title="Eliminar comida"
-            description={`Se eliminara "${meal.name}" permanentemente.`}
+            description={meal.name ? `Se eliminara "${meal.name}" permanentemente.` : "Se eliminara la comida permanentemente."}
             onConfirm={() => {
               deleteMutation.mutate(meal.id, {
                 onSuccess: () => {
@@ -285,10 +286,9 @@ function DetailPhotoGallery({
 
   if (sorted.length === 1) {
     return (
-      <img
+      <PannableImage
         src={sorted[0].url}
-        alt=""
-        className="w-full rounded-lg object-cover max-h-72 cursor-pointer"
+        className="w-full rounded-lg object-cover max-h-72"
         onClick={() => handleSelect(0)}
       />
     );
@@ -296,9 +296,8 @@ function DetailPhotoGallery({
 
   return (
     <div className="space-y-2">
-      <img
+      <PannableImage
         src={sorted[selected].url}
-        alt=""
         className="w-full rounded-lg object-cover max-h-72"
       />
       <div className="flex gap-1.5 overflow-x-auto">

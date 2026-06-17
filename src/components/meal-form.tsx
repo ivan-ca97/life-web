@@ -46,7 +46,7 @@ import { useMealTags } from "@/lib/hooks/use-tags";
 import type { Meal, MealItemRequest, MealPhotoRequest } from "@/lib/types/meal";
 import type { Food } from "@/lib/types/food";
 import { useMediaUpload, type UploadedPhoto } from "@/lib/hooks/use-media";
-import { getAvailableUnits, isMetricUnit } from "@/lib/food-units";
+import { getAvailableUnits, isMetricUnit, buildUnitMap } from "@/lib/food-units";
 import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { toast } from "sonner";
@@ -78,6 +78,7 @@ interface MealItemRow {
   food_base_unit: string;
   food_base_quantity: number;
   food_conversion_units: string[];
+  food_unit_map: Record<string, number>;
   measurement_method: string;
   associatedPhotoUrls: string[];
   primaryPhotoUrl: string | null;
@@ -284,6 +285,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       food_base_unit: i.normalized_unit,
       food_base_quantity: 0,
       food_conversion_units: [],
+      food_unit_map: {},
       measurement_method: i.measurement_method ?? "",
       associatedPhotoUrls: defaultValues.photos
         .filter((p) => p.meal_item_id === i.id)
@@ -327,6 +329,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
           food_base_unit: food.base_unit,
           food_base_quantity: food.base_quantity,
           food_conversion_units: allUnits.filter((u) => u !== food.base_unit),
+          food_unit_map: buildUnitMap(food),
         };
       })
     );
@@ -557,6 +560,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         food_base_unit: food.base_unit,
         food_base_quantity: food.base_quantity,
         food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),
+        food_unit_map: buildUnitMap(food),
         measurement_method: "",
         associatedPhotoUrls: [],
         primaryPhotoUrl: null,
@@ -650,17 +654,12 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
             </div>
           </div>
         )}
-        <div className={isEditing ? "grid grid-cols-1 gap-4" : "grid grid-cols-2 gap-4"}>
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo</Label>
-            <Input
-              id="type"
-              placeholder="desayuno, almuerzo..."
-              {...register("type", { required: "El tipo es obligatorio" })}
-            />
-            {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
-          </div>
-          {!isEditing && (
+        {!isEditing && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Fecha</Label>
+              <Input type="date" value={watch("date")} disabled className="opacity-60" />
+            </div>
             <div className="space-y-2">
               <Label>Hora</Label>
               <div className="flex items-center gap-1">
@@ -677,7 +676,18 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
               </div>
               {dayOffset === 1 && <p className="text-xs text-muted-foreground">Dia siguiente</p>}
             </div>
-          )}
+          </div>
+        )}
+        <div className={isEditing ? "grid grid-cols-1 gap-4" : ""}>
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo</Label>
+            <Input
+              id="type"
+              placeholder="desayuno, almuerzo..."
+              {...register("type", { required: "El tipo es obligatorio" })}
+            />
+            {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
+          </div>
         </div>
 
         {/* Macros */}
@@ -949,20 +959,19 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
                     />
                   </div>
                 </div>
-                {item.food_base_quantity > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Porcion: {item.food_base_quantity} {item.food_base_unit}
-                  </p>
-                )}
                 {(() => {
                   const pi = preview?.items?.[index];
-                  if (!pi) return null;
                   const parts: string[] = [];
-                  if (pi.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
-                  if (pi.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
-                  if (pi.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
-                  if (pi.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
-                  if (pi.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
+                  const factor = item.food_unit_map[item.unit];
+                  if (factor != null && !isMetricUnit(item.unit)) {
+                    const equiv = Number(item.quantity) * factor;
+                    if (equiv > 0) parts.push(`${fmtGrams(equiv)} ${item.food_base_unit}`);
+                  }
+                  if (pi?.calories != null) parts.push(`${fmtCal(pi.calories)} kcal`);
+                  if (pi?.protein_grams != null) parts.push(`${fmtGrams(pi.protein_grams)}g prot`);
+                  if (pi?.carbs_grams != null) parts.push(`${fmtGrams(pi.carbs_grams)}g carbs`);
+                  if (pi?.fat_grams != null) parts.push(`${fmtGrams(pi.fat_grams)}g grasa`);
+                  if (pi?.fiber_grams != null) parts.push(`${fmtGrams(pi.fiber_grams)}g fibra`);
                   if (parts.length === 0) return null;
                   return <p className="text-xs text-muted-foreground">{parts.join(" · ")}</p>;
                 })()}

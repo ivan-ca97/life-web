@@ -198,7 +198,7 @@ export default function ComidasPage() {
                             </Button>
                           }
                           title="Eliminar comida"
-                          description={`Se eliminara "${meal.name}" permanentemente.`}
+                          description={meal.name ? `Se eliminara "${meal.name}" permanentemente.` : "Se eliminara la comida permanentemente."}
                           onConfirm={() => handleDelete(meal.id)}
                           destructive
                         />

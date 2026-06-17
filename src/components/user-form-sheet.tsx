@@ -13,6 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const SEX_LABELS: Record<string, string> = {
+  male: "Masculino",
+  female: "Femenino",
+};
 import {
   Sheet,
   SheetContent,
@@ -151,11 +156,13 @@ export function UserFormSheet({ open, onOpenChange, userId }: UserFormSheetProps
             <Label>Sexo</Label>
             <Select value={sex} onValueChange={(v) => setSex(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleccionar..." />
+                <SelectValue placeholder="Seleccionar...">
+                  {SEX_LABELS[sex]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male" label="Masculino">Masculino</SelectItem>
-                <SelectItem value="female" label="Femenino">Femenino</SelectItem>
+                <SelectItem value="male">Masculino</SelectItem>
+                <SelectItem value="female">Femenino</SelectItem>
               </SelectContent>
             </Select>
           </div>
