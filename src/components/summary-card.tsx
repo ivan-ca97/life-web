@@ -8,11 +8,12 @@ interface SummaryCardProps {
   unit?: string;
   subtitle?: string | null;
   correction?: ReactNode;
+  className?: string;
 }
 
-export function SummaryCard({ icon, label, value, unit, subtitle, correction }: SummaryCardProps) {
+export function SummaryCard({ icon, label, value, unit, subtitle, correction, className }: SummaryCardProps) {
   return (
-    <Card>
+    <Card className={className}>
       <CardContent className="flex items-center gap-3 p-4">
         <div className="text-muted-foreground">{icon}</div>
         <div className="flex-1 min-w-0">

@@ -17,6 +17,7 @@ import {
 const SEX_LABELS: Record<string, string> = {
   male: "Masculino",
   female: "Femenino",
+  other: "Otro",
 };
 import {
   Sheet,
@@ -163,6 +164,7 @@ export function UserFormSheet({ open, onOpenChange, userId }: UserFormSheetProps
               <SelectContent>
                 <SelectItem value="male">Masculino</SelectItem>
                 <SelectItem value="female">Femenino</SelectItem>
+                <SelectItem value="other">Otro</SelectItem>
               </SelectContent>
             </Select>
           </div>

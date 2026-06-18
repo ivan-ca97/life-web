@@ -101,7 +101,7 @@ export default function EjercicioDetallePage({
           <CardTitle className="text-base">Metricas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
             {exercise.duration_seconds != null && (
               <div>
                 <span className="text-muted-foreground">Duracion:</span>{" "}

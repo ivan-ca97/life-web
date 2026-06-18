@@ -145,7 +145,7 @@ export function DailyBreakdownDialog({ open, onOpenChange, date }: DailyBreakdow
               <div className="space-y-4 overflow-y-auto min-h-0 scrollbar-none">
                 {/* Totals */}
                 <div className="space-y-2">
-                  <div className="grid grid-cols-5 gap-2 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">Calorias</span>
                       <p className="font-medium">{fmtCal(totals.cal)}</p>

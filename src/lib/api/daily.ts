@@ -40,3 +40,7 @@ export function closeDay(date: string): Promise<DayClosureResponse> {
 export function openDay(date: string): Promise<void> {
   return userFetch<void>(`/daily/closure?date=${date}`, { method: "DELETE" });
 }
+
+export function getClosureStatus(date: string): Promise<DayClosureResponse> {
+  return userFetch<DayClosureResponse>(`/daily/closure?date=${date}`);
+}

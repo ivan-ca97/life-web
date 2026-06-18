@@ -136,8 +136,13 @@ function WeightForm({
           id="weight_kg"
           type="number"
           step="0.1"
-          min="0"
-          {...register("weight_kg", { required: "El peso es obligatorio" })}
+          min="30"
+          max="500"
+          {...register("weight_kg", {
+            required: "El peso es obligatorio",
+            min: { value: 30, message: "Minimo 30 kg" },
+            max: { value: 500, message: "Maximo 500 kg" },
+          })}
         />
         {errors.weight_kg && (
           <p className="text-sm text-destructive">{errors.weight_kg.message}</p>
@@ -152,8 +157,14 @@ function WeightForm({
           step="0.1"
           min="0"
           max="100"
-          {...register("body_fat_percentage")}
+          {...register("body_fat_percentage", {
+            min: { value: 0, message: "Minimo 0%" },
+            max: { value: 100, message: "Maximo 100%" },
+          })}
         />
+        {errors.body_fat_percentage && (
+          <p className="text-sm text-destructive">{errors.body_fat_percentage.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">

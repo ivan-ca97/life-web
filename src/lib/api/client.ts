@@ -43,6 +43,7 @@ export function clearUserId(): void {
 
 const ERROR_TRANSLATIONS: Record<string, string> = {
   "day is closed": "El dia esta cerrado",
+  "invalid credentials": "Credenciales invalidas",
 };
 
 function translateError(msg: string): string {
@@ -68,7 +69,10 @@ export async function apiFetch<T>(
     headers,
   });
 
-  if (response.status === 401) {
+  // Las rutas /auth/ (login, register, google) manejan su propio 401:
+  // no limpiamos sesion ni redirigimos, dejamos pasar a la traduccion de
+  // errores de abajo (ej: "Credenciales invalidas").
+  if (response.status === 401 && !path.startsWith("/auth/")) {
     clearToken();
     clearUserId();
     window.location.href = "/login";
@@ -80,8 +84,15 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
-    throw new ApiError(response.status, translateError(body.error));
+    const text = await response.text().catch(() => "");
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed.error ?? text;
+    } catch {
+      // Cuerpo no-JSON (ej: 404 text/plain, error de proxy): usamos el texto crudo.
+    }
+    throw new ApiError(response.status, translateError(message) || `Error ${response.status}`);
   }
 
   return response.json();

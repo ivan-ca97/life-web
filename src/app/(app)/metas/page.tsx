@@ -125,7 +125,7 @@ function GoalForm({
           <CardTitle className="text-base">Alimentacion</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="daily_calories">Calorias diarias (kcal)</Label>
               <Input
@@ -185,7 +185,7 @@ function GoalForm({
           <CardTitle className="text-base">Ejercicio</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="daily_steps">Pasos diarios</Label>
               <Input
@@ -219,7 +219,7 @@ function GoalForm({
               id="target_weight_kg"
               type="number"
               step="0.1"
-              min="0"
+              min="0.1"
               {...register("target_weight_kg")}
             />
           </div>

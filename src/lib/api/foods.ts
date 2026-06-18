@@ -48,6 +48,10 @@ export function deleteFood(id: string): Promise<void> {
   return userFetch<void>(`/foods/${id}`, { method: "DELETE" });
 }
 
+export function getFoodUnits(id: string): Promise<string[]> {
+  return userFetch<string[]>(`/foods/${id}/units`);
+}
+
 export function getFoodFrequency(params: {
   from?: string;
   to?: string;

@@ -19,3 +19,11 @@ export function useUpsertGoals() {
     },
   });
 }
+
+export function useGoalProgress(from: string, to: string) {
+  return useQuery({
+    queryKey: ["goals", "progress", from, to],
+    queryFn: () => goalsApi.getGoalProgress(from, to),
+    enabled: !!from && !!to,
+  });
+}

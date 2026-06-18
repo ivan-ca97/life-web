@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useUser, useUpdateUser } from "@/lib/hooks/use-users";
 import { useProfilePhotos, useUploadProfilePhoto } from "@/lib/hooks/use-profile-photos";
@@ -22,6 +22,7 @@ import { CardSkeleton } from "@/components/loading-skeleton";
 const SEX_LABELS: Record<string, string> = {
   male: "Masculino",
   female: "Femenino",
+  other: "Otro",
 };
 
 export default function PerfilPage() {
@@ -31,15 +32,18 @@ export default function PerfilPage() {
   const uploadPhotoMutation = useUploadProfilePhoto();
   const { data: photosData } = useProfilePhotos();
 
+  const [username, setUsername] = useState("");
   const [heightCm, setHeightCm] = useState<string>("");
   const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState("");
   const [password, setPassword] = useState("");
   const [initialized, setInitialized] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   if (!initialized && user) {
+    setUsername(user.username ?? "");
     setHeightCm(user.height_cm != null ? String(user.height_cm) : "");
     setBirthDate(user.birth_date ?? "");
     setSex(user.sex ?? "");
@@ -70,8 +74,26 @@ export default function PerfilPage() {
   }
 
   function handleSave() {
-    const data: Record<string, unknown> = {};
+    if (username && username.length > 50) {
+      toast.error("El nombre de usuario no puede tener mas de 50 caracteres");
+      return;
+    }
     const h = Number(heightCm);
+    if (heightCm && (isNaN(h) || h < 50 || h > 300)) {
+      toast.error("La altura debe estar entre 50 y 300 cm");
+      return;
+    }
+    if (birthDate && new Date(birthDate) > new Date()) {
+      toast.error("La fecha de nacimiento no puede ser futura");
+      return;
+    }
+    if (password && password.length < 8) {
+      toast.error("La contrasena debe tener al menos 8 caracteres");
+      return;
+    }
+
+    const data: Record<string, unknown> = {};
+    if (username !== (user!.username ?? "")) data.username = username || undefined;
     if (heightCm && !isNaN(h) && h !== user!.height_cm) data.height_cm = h;
     if (birthDate && birthDate !== user!.birth_date) data.birth_date = birthDate;
     if (sex && sex !== user!.sex) data.sex = sex;
@@ -134,8 +156,21 @@ export default function PerfilPage() {
             />
             <div className="space-y-1 min-w-0">
               <p className="text-sm font-medium truncate">{user.email}</p>
+              {user.username && (
+                <p className="text-xs text-muted-foreground">@{user.username}</p>
+              )}
               <p className="text-xs text-muted-foreground">Click en la foto para cambiarla</p>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="username">Nombre de usuario</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="usuario123"
+            />
           </div>
 
           {photos.length > 1 && (
@@ -149,7 +184,7 @@ export default function PerfilPage() {
                 Historial de fotos ({photos.length})
               </button>
               {showHistory && (
-                <div className="mt-3 grid grid-cols-5 gap-2">
+                <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                   {photos.map((photo, i) => (
                     <div
                       key={photo.id}
@@ -172,13 +207,13 @@ export default function PerfilPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="height">Altura (cm)</Label>
               <Input
                 id="height"
                 type="number"
-                min="0"
+                min="50"
                 max="300"
                 value={heightCm}
                 onChange={(e) => setHeightCm(e.target.value)}
@@ -195,6 +230,7 @@ export default function PerfilPage() {
                 <SelectContent>
                   <SelectItem value="male">Masculino</SelectItem>
                   <SelectItem value="female">Femenino</SelectItem>
+                  <SelectItem value="other">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -233,6 +269,43 @@ export default function PerfilPage() {
       <Button onClick={handleSave} disabled={updateMutation.isPending}>
         {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
       </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Exportar datos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Descarga todos tus datos (perfil, peso, comidas, ejercicios, alimentos, medidas, metas) en formato JSON.
+          </p>
+          <Button
+            variant="outline"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                const { exportData } = await import("@/lib/api/export");
+                const data = await exportData();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `life-export-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success("Datos exportados");
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Error al exportar");
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            <Download className="size-4 mr-1" />
+            {exporting ? "Exportando..." : "Descargar JSON"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

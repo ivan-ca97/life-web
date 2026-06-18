@@ -64,6 +64,14 @@ export function useDeleteFood() {
   });
 }
 
+export function useFoodUnits(foodId: string) {
+  return useQuery({
+    queryKey: ["foods", foodId, "units"],
+    queryFn: () => foodsApi.getFoodUnits(foodId),
+    enabled: !!foodId,
+  });
+}
+
 export function useUnits() {
   return useQuery({
     queryKey: ["foods", "units"],

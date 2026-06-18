@@ -3,6 +3,7 @@ import type { PaginatedResponse } from "./api";
 export interface User {
   id: string;
   email: string;
+  username?: string;
   active: boolean;
   height_cm?: number;
   birth_date?: string;
@@ -20,6 +21,7 @@ export interface CreateUserRequest {
 
 export interface UpdateUserRequest {
   email?: string;
+  username?: string;
   password?: string;
   height_cm?: number;
   birth_date?: string;

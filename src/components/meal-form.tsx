@@ -630,7 +630,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-w-2xl">
         {/* Fecha + Hora (edicion) o Tipo + Hora (creacion) */}
         {isEditing && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Fecha</Label>
               <Input id="date" type="date" {...register("date", { required: "La fecha es obligatoria" })} />
@@ -655,7 +655,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
           </div>
         )}
         {!isEditing && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Fecha</Label>
               <Input type="date" value={watch("date")} disabled className="opacity-60" />
@@ -701,7 +701,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
               </span>
             )}
           </div>
-          <div className="grid grid-cols-5 gap-2 items-end">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 items-end">
             {macroFieldsMeta.map(({ key, label }) => (
               <div key={key} className="space-y-1">
                 <Label className="text-xs">{label}</Label>
@@ -878,7 +878,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
                     <X className="size-3" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   <div>
                     <Label className="text-xs">Cantidad</Label>
                     <Input

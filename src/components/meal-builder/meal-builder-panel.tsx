@@ -236,7 +236,7 @@ export function MealBuilderPanel({
             <Label className="text-xs">Totales</Label>
             {previewLoading && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
           </div>
-          <div className="grid grid-cols-5 gap-1 text-center text-xs tabular-nums">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1 text-center text-xs tabular-nums">
             <div>
               <p className="text-muted-foreground">kcal</p>
               <p className="font-medium">{fmtCal(preview.calories)}</p>

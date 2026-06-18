@@ -68,7 +68,7 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
               {/* Macros */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Macros</h4>
-                <div className="grid grid-cols-5 gap-2 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground text-xs">Calorias</span>
                     <p className="font-medium">

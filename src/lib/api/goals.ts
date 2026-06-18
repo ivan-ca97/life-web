@@ -1,5 +1,5 @@
 import { userFetch } from "./client";
-import type { Goal, UpsertGoalRequest } from "@/lib/types/goal";
+import type { Goal, UpsertGoalRequest, GoalProgress } from "@/lib/types/goal";
 
 export function getGoals(): Promise<Goal> {
   return userFetch<Goal>("/goals");
@@ -10,4 +10,8 @@ export function upsertGoals(data: UpsertGoalRequest): Promise<Goal> {
     method: "PUT",
     body: JSON.stringify(data),
   });
+}
+
+export function getGoalProgress(from: string, to: string): Promise<GoalProgress> {
+  return userFetch<GoalProgress>(`/goals/progress?from=${from}&to=${to}`);
 }

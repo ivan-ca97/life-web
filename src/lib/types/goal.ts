@@ -24,3 +24,31 @@ export interface UpsertGoalRequest {
   target_weight_kg?: number;
   started_at?: string;
 }
+
+export interface GoalMetric {
+  target: number;
+  average: number;
+  days_met: number;
+  days_tracked: number;
+  days_total: number;
+}
+
+export interface WeightProgress {
+  target_kg: number;
+  current_kg?: number;
+}
+
+export interface GoalProgress {
+  from: string;
+  to: string;
+  days_total: number;
+  goal?: Goal;
+  daily_calories?: GoalMetric;
+  daily_protein_grams?: GoalMetric;
+  daily_carbs_grams?: GoalMetric;
+  daily_fat_grams?: GoalMetric;
+  daily_fiber_grams?: GoalMetric;
+  daily_steps?: GoalMetric;
+  daily_exercise_minutes?: GoalMetric;
+  weight_progress?: WeightProgress;
+}

@@ -5,7 +5,7 @@ import { format, subDays } from "date-fns";
 import { useDate } from "@/lib/date/context";
 import { useDailySummaryRange } from "@/lib/hooks/use-daily-summary";
 import { useFoodFrequency } from "@/lib/hooks/use-foods";
-import { useGoals } from "@/lib/hooks/use-goals";
+import { useGoals, useGoalProgress } from "@/lib/hooks/use-goals";
 import { DateRangeSelector } from "@/components/date-range-selector";
 import { CalorieChart } from "@/components/charts/calorie-chart";
 import { BalanceChart } from "@/components/charts/balance-chart";
@@ -17,6 +17,7 @@ import { FiberChart } from "@/components/charts/fiber-chart";
 import { CumulativeBalanceChart } from "@/components/charts/cumulative-balance-chart";
 import { ProteinPerKgChart } from "@/components/charts/protein-per-kg-chart";
 import { FoodFrequencyChart } from "@/components/charts/food-frequency-chart";
+import { GoalProgressCard } from "@/components/goal-progress-card";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,6 +31,7 @@ export default function EstadisticasPage() {
   const { data: rangeData, isLoading, isError } = useDailySummaryRange(from, to);
   const { data: foodFreq } = useFoodFrequency({ from, to });
   const { data: goals } = useGoals();
+  const { data: goalProgress } = useGoalProgress(from, to);
 
   const summaries = rangeData?.data ?? [];
 
@@ -62,6 +64,7 @@ export default function EstadisticasPage() {
         <EmptyState message={isError ? "Error al cargar estadisticas" : "No hay datos para el rango seleccionado"} />
       ) : (
         <div className="space-y-4">
+          {goalProgress && <GoalProgressCard progress={goalProgress} />}
           <CalorieChart data={summaries} goalCalories={goals?.daily_calories} />
           <BalanceChart data={summaries} />
           <CumulativeBalanceChart data={summaries} />

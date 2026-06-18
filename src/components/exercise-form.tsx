@@ -165,7 +165,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 max-w-lg">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tipo</Label>
           <Select
@@ -227,7 +227,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Calorias quemadas</Label>
           <Input type="number" step="any" min="0" {...register("estimated_calories_burned")} />
@@ -243,7 +243,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
       </div>
 
       {showStrength && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Volumen total (kg)</Label>
             <Input type="number" step="any" min="0" {...register("total_volume_kg")} />
@@ -271,7 +271,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
       )}
 
       {showCardio && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Distancia (m)</Label>
             <Input type="number" step="any" min="0" {...register("distance_meters")} />
@@ -307,7 +307,10 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
-              <Input id="name" {...register("name")} />
+              <Input id="name" {...register("name", { required: "El nombre es obligatorio" })} />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
