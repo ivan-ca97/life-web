@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useMeal } from "@/lib/hooks/use-meals";
+import { formatAr } from "@/lib/datetime";
 import { MealEditSheet } from "@/components/meal-edit-sheet";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { getMethodMeta } from "@/lib/measurement-method";
@@ -93,8 +94,8 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
                 <Badge variant="outline">{meal.type}</Badge>
                 {meal.eaten_at && (
                   <span className="tabular-nums">
-                    {meal.eaten_at.slice(11, 16)}
-                    {meal.eaten_at.slice(0, 10) !== meal.date && (
+                    {formatAr(meal.eaten_at, "HH:mm")}
+                    {formatAr(meal.eaten_at, "yyyy-MM-dd") !== meal.date && (
                       <span className="ml-0.5 text-[10px] align-super opacity-60">+1d</span>
                     )}
                   </span>

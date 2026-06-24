@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useDate } from "@/lib/date/context";
+import { arWallTimeToUtcIso } from "@/lib/datetime";
 import { useCreateMeal, useMealPreview } from "@/lib/hooks/use-meals";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -117,7 +118,7 @@ export function useMealBuilder() {
         name: meta.name || undefined,
         photos: photoReqs,
         eaten_at: meta.eaten_time
-          ? `${globalDate}T${meta.eaten_time}:00Z`
+          ? arWallTimeToUtcIso(globalDate, meta.eaten_time)
           : undefined,
         tags: meta.tags ?? [],
         items: items.map((i) => ({

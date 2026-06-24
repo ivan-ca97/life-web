@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useDate } from "@/lib/date/context";
+import { formatAr } from "@/lib/datetime";
 import { Plus, Pencil, Trash2, Eye, Flame, Beef, Wheat, Droplets, Leaf, ImageIcon, ListTree } from "lucide-react";
 import { toast } from "sonner";
-import { useMeals, useDeleteMeal } from "@/lib/hooks/use-meals";
+import { useMeals, usePendingMeals, useDeleteMeal } from "@/lib/hooks/use-meals";
 import { useDailySummary } from "@/lib/hooks/use-daily-summary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +35,10 @@ export default function ComidasPage() {
   const limit = 20;
 
   const { data, isLoading } = useMeals({ date, limit, offset });
+  const { data: pendingData } = usePendingMeals(date);
   const { data: summary } = useDailySummary(date);
   const deleteMutation = useDeleteMeal();
+  const pendingCount = pendingData?.items.length ?? 0;
 
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
@@ -47,7 +50,14 @@ export default function ComidasPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Comidas</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Comidas</h1>
+          {pendingCount > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {pendingCount} pendiente{pendingCount > 1 ? "s" : ""}
+            </Badge>
+          )}
+        </div>
         {!summary?.closed && (
           <Button onClick={() => setSheetOpen(true)}>
             <Plus className="size-4 mr-1" />
@@ -130,7 +140,7 @@ export default function ComidasPage() {
                 return data.items.map((meal) => {
                   const primaryPhoto = meal.photos.find((p) => p.is_primary) ?? meal.photos[0];
                   return (
-                <div key={meal.id} className="flex items-center gap-4 px-4 py-3">
+                <div key={meal.id} className={`flex items-center gap-4 px-4 py-3 ${meal.status === "pending" ? "border-l-3 border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/20" : ""}`}>
                   {anyHasPhotos && (
                     primaryPhoto ? (
                       <div className="size-16 shrink-0 rounded-md overflow-hidden">
@@ -143,10 +153,15 @@ export default function ComidasPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{meal.type}</Badge>
+                      {meal.status === "pending" && (
+                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          Pendiente
+                        </Badge>
+                      )}
                       {meal.eaten_at && (
                         <span className="text-xs text-muted-foreground tabular-nums">
-                          {meal.eaten_at.slice(11, 16)}
-                          {meal.eaten_at.slice(0, 10) !== meal.date && (
+                          {formatAr(meal.eaten_at, "HH:mm")}
+                          {formatAr(meal.eaten_at, "yyyy-MM-dd") !== meal.date && (
                             <span className="ml-0.5 text-[10px] align-super opacity-60">+1d</span>
                           )}
                         </span>
@@ -188,7 +203,12 @@ export default function ComidasPage() {
                     </Button>
                     {!summary?.closed && (
                       <>
-                        <Button variant="ghost" size="icon-sm" onClick={() => setEditingMealId(meal.id)}>
+                        <Button
+                          variant={meal.status === "pending" ? "outline" : "ghost"}
+                          size="icon-sm"
+                          className={meal.status === "pending" ? "border-amber-400 text-amber-600 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30" : ""}
+                          onClick={() => setEditingMealId(meal.id)}
+                        >
                           <Pencil className="size-4" />
                         </Button>
                         <ConfirmDialog

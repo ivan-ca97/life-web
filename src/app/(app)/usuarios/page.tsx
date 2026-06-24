@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { formatAr } from "@/lib/datetime";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUsers, useDeleteUser } from "@/lib/hooks/use-users";
@@ -63,7 +63,7 @@ export default function UsuariosPage() {
                     <div className="min-w-0 flex-1">
                       <span className="font-medium">{user.email}</span>
                       <p className="text-sm text-muted-foreground">
-                        Creado {format(new Date(user.created_at), "dd/MM/yyyy")}
+                        Creado {formatAr(user.created_at, "dd/MM/yyyy")}
                         {profileParts.length > 0 && ` · ${profileParts.join(" · ")}`}
                       </p>
                     </div>

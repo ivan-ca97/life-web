@@ -26,11 +26,14 @@ export interface MealPhoto {
   meal_item_id?: string;
 }
 
+export type MealStatus = "complete" | "pending";
+
 export interface Meal {
   id: string;
   date: string;
   type: string;
   name: string;
+  status: MealStatus;
   photos: MealPhoto[];
   eaten_at?: string;
   calories?: number;
@@ -66,6 +69,7 @@ export interface CreateMealRequest {
   date: string;
   type: string;
   name?: string;
+  status?: MealStatus;
   photos?: MealPhotoRequest[];
   eaten_at?: string;
   calories?: number;

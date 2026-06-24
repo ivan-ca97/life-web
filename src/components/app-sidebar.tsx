@@ -12,6 +12,7 @@ import {
   BarChart3,
   Target,
   CalendarDays,
+  Share2,
   Users,
   UserCog,
   LogOut,
@@ -42,6 +43,7 @@ const navItems = [
   { label: "Medidas", href: "/medidas", icon: Ruler },
   { label: "Estadisticas", href: "/estadisticas", icon: BarChart3 },
   { label: "Metas", href: "/metas", icon: Target },
+  { label: "Compartir", href: "/compartir", icon: Share2 },
   { label: "Perfil", href: "/perfil", icon: UserCog },
   { label: "Usuarios", href: "/usuarios", icon: Users },
 ];

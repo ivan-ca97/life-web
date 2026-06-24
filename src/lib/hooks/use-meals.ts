@@ -59,6 +59,14 @@ export function useDeleteMeal() {
   });
 }
 
+export function usePendingMeals(date: string) {
+  return useQuery({
+    queryKey: ["meals", "pending", date],
+    queryFn: () => mealsApi.getMeals({ date, status: "pending" }),
+    enabled: !!date,
+  });
+}
+
 export function useMealPreview(items: MealPreviewItem[]) {
   const debouncedItems = useDebounce(items, 500);
 

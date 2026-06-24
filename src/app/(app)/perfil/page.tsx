@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Camera, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
+import { todayAr } from "@/lib/datetime";
 import { useUser, useUpdateUser } from "@/lib/hooks/use-users";
 import { useProfilePhotos, useUploadProfilePhoto } from "@/lib/hooks/use-profile-photos";
 import { Button } from "@/components/ui/button";
@@ -290,7 +291,7 @@ export default function PerfilPage() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `life-export-${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `life-export-${todayAr()}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
                 toast.success("Datos exportados");

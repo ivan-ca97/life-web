@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDate } from "@/lib/date/context";
+import { arWallTimeToUtcIso, formatAr, todayAr } from "@/lib/datetime";
 import {
   DndContext,
   DragOverlay,
@@ -40,7 +41,7 @@ import { FoodSearchCombobox } from "@/components/food-search-combobox";
 import { TagInput } from "@/components/tag-input";
 import { MacroBar } from "@/components/macro-bar";
 import { useQueries } from "@tanstack/react-query";
-import { useMealPreview } from "@/lib/hooks/use-meals";
+import { useMealPreview, useMealTypes } from "@/lib/hooks/use-meals";
 import * as foodsApi from "@/lib/api/foods";
 import { useMealTags } from "@/lib/hooks/use-tags";
 import type { Meal, MealItemRequest, MealPhotoRequest } from "@/lib/types/meal";
@@ -265,12 +266,13 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       .map((p) => ({ url: p.url, is_primary: p.is_primary })) ?? []
   );
   const [extraOpen, setExtraOpen] = useState(false);
+  const { data: mealTypesData } = useMealTypes(new Date().getHours());
   const { data: tagSuggestions } = useMealTags();
   const [submitError, setSubmitError] = useState("");
   const [dayOffset, setDayOffset] = useState<number>(() => {
     if (!defaultValues?.eaten_at || !defaultValues?.date) return 0;
     const diff = differenceInCalendarDays(
-      parse(defaultValues.eaten_at.slice(0, 10), "yyyy-MM-dd", new Date()),
+      parse(formatAr(defaultValues.eaten_at, "yyyy-MM-dd"), "yyyy-MM-dd", new Date()),
       parse(defaultValues.date, "yyyy-MM-dd", new Date())
     );
     return Math.max(0, Math.min(1, diff));
@@ -455,15 +457,14 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     handleSubmit,
     setValue,
     watch,
+    clearErrors,
     formState: { errors },
   } = useForm<MealFormValues>({
     defaultValues: {
       date: defaultValues?.date ?? globalDate,
       eaten_time:
-        defaultValues?.eaten_at?.slice(11, 16) ??
-        (globalDate === format(new Date(), "yyyy-MM-dd")
-          ? format(new Date(), "HH:mm")
-          : "00:00"),
+        (defaultValues?.eaten_at ? formatAr(defaultValues.eaten_at, "HH:mm") : undefined) ??
+        (globalDate === todayAr() ? formatAr(new Date(), "HH:mm") : "00:00"),
       type: defaultValues?.type ?? "",
       name: defaultValues?.name ?? "",
       notes: defaultValues?.notes ?? "",
@@ -603,7 +604,10 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     onSubmit({
       date: values.date,
       eaten_at: values.eaten_time
-        ? `${format(addDays(parse(values.date, "yyyy-MM-dd", new Date()), dayOffset), "yyyy-MM-dd")}T${values.eaten_time}:00Z`
+        ? arWallTimeToUtcIso(
+            format(addDays(parse(values.date, "yyyy-MM-dd", new Date()), dayOffset), "yyyy-MM-dd"),
+            values.eaten_time
+          )
         : undefined,
       type: values.type,
       name: values.name || undefined,
@@ -681,11 +685,27 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         <div className={isEditing ? "grid grid-cols-1 gap-4" : ""}>
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <Input
-              id="type"
-              placeholder="desayuno, almuerzo..."
-              {...register("type", { required: "El tipo es obligatorio" })}
-            />
+            {mealTypesData?.types && mealTypesData.types.length > 0 ? (
+              <Select
+                value={watch("type")}
+                onValueChange={(v) => { setValue("type", v ?? ""); clearErrors("type"); }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar tipo">{watch("type")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {mealTypesData.types.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="type"
+                placeholder="desayuno, almuerzo..."
+                {...register("type", { required: "El tipo es obligatorio" })}
+              />
+            )}
             {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
           </div>
         </div>

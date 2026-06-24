@@ -21,6 +21,7 @@ export interface MealFilters {
   from?: string;
   to?: string;
   type?: string;
+  status?: string;
   tag?: string;
   food_id?: string;
   min_calories?: number;

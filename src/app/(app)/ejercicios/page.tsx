@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useDate } from "@/lib/date/context";
+import { formatAr } from "@/lib/datetime";
 import { Plus, Pencil, Trash2, Eye, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useExercises, useDeleteExercise } from "@/lib/hooks/use-exercises";
@@ -85,8 +86,8 @@ export default function EjerciciosPage() {
                       </Badge>
                       {exercise.started_at && (
                         <span className="text-xs text-muted-foreground tabular-nums">
-                          {exercise.started_at.slice(11, 16)}
-                          {exercise.started_at.slice(0, 10) !== exercise.date && (
+                          {formatAr(exercise.started_at, "HH:mm")}
+                          {formatAr(exercise.started_at, "yyyy-MM-dd") !== exercise.date && (
                             <span className="ml-0.5 text-[10px] align-super opacity-60">+1d</span>
                           )}
                         </span>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDate } from "@/lib/date/context";
+import { arWallTimeToUtcIso, formatAr, todayAr } from "@/lib/datetime";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { addDays, format, parse, differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,7 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
   const [dayOffset, setDayOffset] = useState<number>(() => {
     if (!defaultValues?.started_at || !defaultValues?.date) return 0;
     const diff = differenceInCalendarDays(
-      parse(defaultValues.started_at.slice(0, 10), "yyyy-MM-dd", new Date()),
+      parse(formatAr(defaultValues.started_at, "yyyy-MM-dd"), "yyyy-MM-dd", new Date()),
       parse(defaultValues.date, "yyyy-MM-dd", new Date())
     );
     return Math.max(0, Math.min(1, diff));
@@ -106,7 +107,9 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
       date: defaultValues?.date ?? globalDate,
       type: defaultValues?.type ?? "",
       name: defaultValues?.name ?? "",
-      started_time: defaultValues?.started_at?.slice(11, 16) ?? (globalDate === format(new Date(), "yyyy-MM-dd") ? format(new Date(), "HH:mm") : "00:00"),
+      started_time:
+        (defaultValues?.started_at ? formatAr(defaultValues.started_at, "HH:mm") : undefined) ??
+        (globalDate === todayAr() ? formatAr(new Date(), "HH:mm") : "00:00"),
       duration_h: initDuration != null ? Math.floor(initDuration / 3600).toString() : "",
       duration_m: initDuration != null ? Math.floor((initDuration % 3600) / 60).toString() : "",
       duration_s: initDuration != null ? (initDuration % 60).toString() : "",
@@ -140,7 +143,10 @@ export function ExerciseForm({ defaultValues, onSubmit, isLoading }: ExerciseFor
       type: values.type,
       name: values.name,
       started_at: values.started_time
-        ? `${format(addDays(parse(values.date, "yyyy-MM-dd", new Date()), dayOffset), "yyyy-MM-dd")}T${values.started_time}:00Z`
+        ? arWallTimeToUtcIso(
+            format(addDays(parse(values.date, "yyyy-MM-dd", new Date()), dayOffset), "yyyy-MM-dd"),
+            values.started_time
+          )
         : undefined,
       duration_seconds: (() => {
         const h = Number(values.duration_h) || 0;

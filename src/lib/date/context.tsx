@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import { format } from "date-fns";
+import { todayAr } from "@/lib/datetime";
 
 interface DateContextValue {
   date: string;
@@ -23,7 +23,7 @@ const STORAGE_KEY = "life_selected_date";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function getToday(): string {
-  return format(new Date(), "yyyy-MM-dd");
+  return todayAr();
 }
 
 function getInitialDate(): string {
