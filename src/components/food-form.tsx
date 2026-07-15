@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIngredients } from "@/lib/hooks/use-foods";
+import { formatAr } from "@/lib/datetime";
 import { TagInput } from "@/components/tag-input";
 import { PhotoUpload } from "@/components/photo-upload";
 import { useFoodTags } from "@/lib/hooks/use-tags";
@@ -479,6 +480,18 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
           </Card>
         )}
       </div>
+
+      {defaultValues && (
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none hover:text-foreground">
+            Mas informacion
+          </summary>
+          <div className="mt-2 space-y-0.5 pl-1">
+            <div>Cargado el {formatAr(defaultValues.created_at, "d MMM yyyy, HH:mm")}</div>
+            <div>Ultima edicion el {formatAr(defaultValues.updated_at, "d MMM yyyy, HH:mm")}</div>
+          </div>
+        </details>
+      )}
 
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Guardando..." : defaultValues ? "Guardar cambios" : "Crear alimento"}

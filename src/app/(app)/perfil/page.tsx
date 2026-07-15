@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Camera, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { todayAr } from "@/lib/datetime";
+import { AiUsageCard } from "@/components/ai-usage-card";
 import { useUser, useUpdateUser } from "@/lib/hooks/use-users";
 import { useProfilePhotos, useUploadProfilePhoto } from "@/lib/hooks/use-profile-photos";
 import { Button } from "@/components/ui/button";
@@ -307,6 +308,8 @@ export default function PerfilPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <AiUsageCard />
     </div>
   );
 }

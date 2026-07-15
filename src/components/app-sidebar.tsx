@@ -15,6 +15,8 @@ import {
   Share2,
   Users,
   UserCog,
+  Sparkles,
+  Download,
   LogOut,
   Moon,
   Sun,
@@ -32,6 +34,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
+import { useIsAndroidPhone } from "@/lib/use-is-android-phone";
+import { useLatestRelease } from "@/lib/hooks/use-app-update";
 
 const navItems = [
   { label: "Resumen", href: "/resumen", icon: LayoutDashboard },
@@ -46,12 +50,15 @@ const navItems = [
   { label: "Compartir", href: "/compartir", icon: Share2 },
   { label: "Perfil", href: "/perfil", icon: UserCog },
   { label: "Usuarios", href: "/usuarios", icon: Users },
+  { label: "IA / Tiers", href: "/ai-tiers", icon: Sparkles },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const isAndroidPhone = useIsAndroidPhone();
+  const { data: release } = useLatestRelease();
 
   return (
     <Sidebar>
@@ -79,6 +86,16 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {isAndroidPhone && release?.apk_url && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<a href={release.apk_url} target="_blank" rel="noopener noreferrer" />}
+              >
+                <Download className="size-4" />
+                <span>Descargar app{release.version ? ` (v${release.version})` : ""}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

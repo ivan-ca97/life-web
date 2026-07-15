@@ -21,7 +21,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { X, ChevronDown, ChevronRight, Loader2, ImagePlus, Star, Clock } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Loader2, ImagePlus, Star, Clock, Sparkles } from "lucide-react";
 import { addDays, format, parse, differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,10 +44,11 @@ import { useQueries } from "@tanstack/react-query";
 import { useMealPreview, useMealTypes } from "@/lib/hooks/use-meals";
 import * as foodsApi from "@/lib/api/foods";
 import { useMealTags } from "@/lib/hooks/use-tags";
-import type { Meal, MealItemRequest, MealPhotoRequest } from "@/lib/types/meal";
+import type { Meal, MealItemRequest, MealPhotoRequest, MealStatus } from "@/lib/types/meal";
 import type { Food } from "@/lib/types/food";
 import { useMediaUpload, type UploadedPhoto } from "@/lib/hooks/use-media";
 import { getAvailableUnits, isMetricUnit, buildUnitMap } from "@/lib/food-units";
+import { AiAnalyzePanel, type AiAppliedItem } from "@/components/ai-analyze-panel";
 import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { toast } from "sonner";
@@ -90,6 +91,7 @@ interface MealFormProps {
   defaultValues?: Meal;
   onSubmit: (data: {
     date: string;
+    status?: MealStatus;
     eaten_at?: string;
     type: string;
     name?: string;
@@ -277,6 +279,8 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     );
     return Math.max(0, Math.min(1, diff));
   });
+  const [pending, setPending] = useState(defaultValues?.status === "pending");
+  const [aiOpen, setAiOpen] = useState(false);
   const [items, setItems] = useState<MealItemRow[]>(
     defaultValues?.items.map((i) => ({
       item_id: i.id,
@@ -574,6 +578,30 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     setItems(items.filter((_, i) => i !== index));
   }
 
+  // Inyecta en la comida los alimentos que devolvio el analisis por IA.
+  function applyAiItems(applied: AiAppliedItem[]) {
+    setItems((prev) => [
+      ...prev,
+      ...applied.map((a) => {
+        const avail = getAvailableUnits(a.food);
+        return {
+          food_id: a.food.id,
+          food_name: a.food.name,
+          quantity: String(a.quantity),
+          unit: avail.includes(a.unit) ? a.unit : a.food.base_unit,
+          food_base_unit: a.food.base_unit,
+          food_base_quantity: a.food.base_quantity,
+          food_conversion_units: avail.filter((u) => u !== a.food.base_unit),
+          food_unit_map: buildUnitMap(a.food),
+          measurement_method: a.measurement_method,
+          associatedPhotoUrls: [],
+          primaryPhotoUrl: null,
+          notes: "",
+        };
+      }),
+    ]);
+  }
+
   function handleItemChange(index: number, field: keyof MealItemRow, value: string | number) {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
@@ -603,6 +631,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
 
     onSubmit({
       date: values.date,
+      status: pending ? "pending" : "complete",
       eaten_at: values.eaten_time
         ? arWallTimeToUtcIso(
             format(addDays(parse(values.date, "yyyy-MM-dd", new Date()), dayOffset), "yyyy-MM-dd"),
@@ -682,6 +711,15 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
             </div>
           </div>
         )}
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4 accent-primary"
+            checked={pending}
+            onChange={(e) => setPending(e.target.checked)}
+          />
+          Comida pendiente (guardar sin completar)
+        </label>
         <div className={isEditing ? "grid grid-cols-1 gap-4" : ""}>
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
@@ -878,6 +916,25 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
               e.target.value = "";
             }}
           />
+          {photos.length > 0 &&
+            (aiOpen ? (
+              <AiAnalyzePanel
+                photoUrls={photos.map((p) => p.url)}
+                onApply={applyAiItems}
+                onClose={() => setAiOpen(false)}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setAiOpen(true)}
+              >
+                <Sparkles className="size-4 mr-1" />
+                Analizar fotos con IA
+              </Button>
+            ))}
         </div>
 
         {/* Alimentos */}

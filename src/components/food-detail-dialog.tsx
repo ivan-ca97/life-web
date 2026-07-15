@@ -2,6 +2,7 @@
 
 import { useFood } from "@/lib/hooks/use-foods";
 import { fmtCal, fmtGrams } from "@/lib/format";
+import { formatAr } from "@/lib/datetime";
 import { MacroBar } from "@/components/macro-bar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -173,6 +174,17 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
                   </ul>
                 </div>
               )}
+
+              {/* Mas informacion */}
+              <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none hover:text-foreground">
+                  Mas informacion
+                </summary>
+                <div className="mt-2 space-y-0.5 pl-1">
+                  <div>Cargado el {formatAr(food.created_at, "d MMM yyyy, HH:mm")}</div>
+                  <div>Ultima edicion el {formatAr(food.updated_at, "d MMM yyyy, HH:mm")}</div>
+                </div>
+              </details>
             </div>
           </>
         )}
