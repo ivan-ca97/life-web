@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -71,6 +72,7 @@ function toOptNum(val: string): number | undefined {
 
 export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) {
   const [tags, setTags] = useState<string[]>(defaultValues?.tags ?? []);
+  const [isPublic, setIsPublic] = useState(defaultValues?.public ?? false);
   const [photo, setPhoto] = useState<UploadedPhoto[]>(
     defaultValues?.photo_url ? [{ url: defaultValues.photo_url, is_primary: true }] : []
   );
@@ -201,6 +203,7 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       portions: validPortions,
       tags,
       ingredients,
+      public: isPublic,
     });
   }
 
@@ -480,6 +483,23 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
           </Card>
         )}
       </div>
+
+      {/* Publico */}
+      <Card>
+        <CardContent className="p-3 flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="public">Alimento publico</Label>
+            <p className="text-xs text-muted-foreground">
+              Si esta activado, cualquier usuario podra verlo y copiarlo desde la comunidad.
+            </p>
+          </div>
+          <Switch
+            id="public"
+            checked={isPublic}
+            onCheckedChange={(checked) => setIsPublic(checked)}
+          />
+        </CardContent>
+      </Card>
 
       {defaultValues && (
         <details className="text-xs text-muted-foreground">

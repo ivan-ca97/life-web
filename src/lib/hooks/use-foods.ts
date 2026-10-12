@@ -64,6 +64,27 @@ export function useDeleteFood() {
   });
 }
 
+export function useCommunityFoods(params: {
+  q?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ["foods", "community", params],
+    queryFn: () => foodsApi.getCommunityFoods(params),
+  });
+}
+
+export function useCopyFood() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => foodsApi.copyFood(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+    },
+  });
+}
+
 export function useFoodUnits(foodId: string) {
   return useQuery({
     queryKey: ["foods", foodId, "units"],

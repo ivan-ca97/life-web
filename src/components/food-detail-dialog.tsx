@@ -1,11 +1,13 @@
 "use client";
 
+import { Globe } from "lucide-react";
 import { useFood } from "@/lib/hooks/use-foods";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { formatAr } from "@/lib/datetime";
 import { MacroBar } from "@/components/macro-bar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Food } from "@/lib/types/food";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +25,16 @@ const MEASUREMENT_LABELS: Record<string, string> = {
 interface FoodDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  foodId: string;
+  /** Fetch the food by id (user-owned foods). */
+  foodId?: string;
+  /** Render a food object directly without fetching (e.g. community foods). */
+  food?: Food;
 }
 
-export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialogProps) {
-  const { data: food, isLoading } = useFood(foodId);
+export function FoodDetailDialog({ open, onOpenChange, foodId, food: foodProp }: FoodDetailDialogProps) {
+  const { data: fetchedFood, isLoading: isFetching } = useFood(foodProp ? "" : foodId ?? "");
+  const food = foodProp ?? fetchedFood;
+  const isLoading = !foodProp && isFetching;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,6 +69,12 @@ export function FoodDetailDialog({ open, onOpenChange, foodId }: FoodDetailDialo
                 <span>
                   {food.base_quantity} {food.base_unit}
                 </span>
+                {food.public && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Globe className="size-3" />
+                    Publico
+                  </Badge>
+                )}
               </DialogDescription>
             </DialogHeader>
 
