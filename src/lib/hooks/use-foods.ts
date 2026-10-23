@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as foodsApi from "@/lib/api/foods";
-import type { CreateFoodRequest, UpdateFoodRequest } from "@/lib/types/food";
+import type {
+  CreateFoodRequest,
+  UpdateFoodRequest,
+  PortionRequest,
+  UpdatePortionRequest,
+} from "@/lib/types/food";
 
 export function useFoods(params: {
   q?: string;
@@ -58,6 +63,37 @@ export function useDeleteFood() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => foodsApi.deleteFood(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+    },
+  });
+}
+
+export function useAddFoodPortion(foodId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: PortionRequest) => foodsApi.addFoodPortion(foodId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+    },
+  });
+}
+
+export function useUpdateFoodPortion(foodId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ portionId, data }: { portionId: string; data: UpdatePortionRequest }) =>
+      foodsApi.updateFoodPortion(foodId, portionId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+    },
+  });
+}
+
+export function useDeleteFoodPortion(foodId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (portionId: string) => foodsApi.deleteFoodPortion(foodId, portionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foods"] });
     },

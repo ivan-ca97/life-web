@@ -20,6 +20,7 @@ import { useIngredients } from "@/lib/hooks/use-foods";
 import { formatAr } from "@/lib/datetime";
 import { TagInput } from "@/components/tag-input";
 import { PhotoUpload } from "@/components/photo-upload";
+import { FoodPortionsEditor } from "@/components/food-portions-editor";
 import { useFoodTags } from "@/lib/hooks/use-tags";
 import type { UploadedPhoto } from "@/lib/hooks/use-media";
 import type {
@@ -200,7 +201,7 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       default_fiber_grams: toOptNum(values.default_fiber_grams),
       photo_url: photo.length > 0 ? photo[0].url : undefined,
       conversions: hasConversions ? conversions : undefined,
-      portions: validPortions,
+      portions: defaultValues ? undefined : validPortions,
       tags,
       ingredients,
       public: isPublic,
@@ -372,58 +373,66 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
         />
       </div>
 
-      {/* Porciones */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label>Porciones</Label>
-          <Button type="button" variant="ghost" size="sm" onClick={handleAddPortion}>
-            <Plus className="size-4 mr-1" />
-            Agregar
-          </Button>
-        </div>
-        {portions.length > 0 ? (
-          <div className="space-y-2">
-            {portions.map((portion, index) => (
-              <Card key={index}>
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Nombre (ej: taza, porcion)"
-                      value={portion.name}
-                      onChange={(e) => handlePortionChange(index, "name", e.target.value)}
-                      className="flex-1"
-                    />
-                    <span className="text-sm text-muted-foreground shrink-0">=</span>
-                    <Input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="Cantidad"
-                      value={portion.base_equivalent}
-                      onChange={(e) => handlePortionChange(index, "base_equivalent", e.target.value)}
-                      className="w-24"
-                    />
-                    <span className="text-sm font-medium shrink-0">{baseUnit}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 shrink-0"
-                      onClick={() => handleRemovePortion(index)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      {/* Porciones: al editar se guardan una por una; al crear viajan con el alimento */}
+      {defaultValues ? (
+        <FoodPortionsEditor
+          foodId={defaultValues.id}
+          portions={defaultValues.portions ?? []}
+          baseUnit={baseUnit}
+        />
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Porciones</Label>
+            <Button type="button" variant="ghost" size="sm" onClick={handleAddPortion}>
+              <Plus className="size-4 mr-1" />
+              Agregar
+            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Sin porciones. Ej: 1 taza = 240 ml
-          </p>
-        )}
-      </div>
+          {portions.length > 0 ? (
+            <div className="space-y-2">
+              {portions.map((portion, index) => (
+                <Card key={index}>
+                  <CardContent className="p-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Nombre (ej: taza, porcion)"
+                        value={portion.name}
+                        onChange={(e) => handlePortionChange(index, "name", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground shrink-0">=</span>
+                      <Input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Cantidad"
+                        value={portion.base_equivalent}
+                        onChange={(e) => handlePortionChange(index, "base_equivalent", e.target.value)}
+                        className="w-24"
+                      />
+                      <span className="text-sm font-medium shrink-0">{baseUnit}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                        onClick={() => handleRemovePortion(index)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sin porciones. Ej: 1 taza = 240 ml
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Conversiones */}
       <div className="space-y-3">

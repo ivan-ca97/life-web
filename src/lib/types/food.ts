@@ -76,7 +76,10 @@ export interface CreateFoodRequest {
   ingredients?: string[];
 }
 
-export type UpdateFoodRequest = Partial<CreateFoodRequest>;
+/** Portions are managed through their own endpoints once the food exists. */
+export type UpdateFoodRequest = Partial<Omit<CreateFoodRequest, "portions">>;
+
+export type UpdatePortionRequest = Partial<PortionRequest>;
 
 export interface FoodFrequencyItem {
   food_id: string;

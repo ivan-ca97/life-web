@@ -2,8 +2,11 @@ import { apiFetch, userFetch } from "./client";
 import type {
   Food,
   FoodPage,
+  Portion,
   CreateFoodRequest,
   UpdateFoodRequest,
+  PortionRequest,
+  UpdatePortionRequest,
   FoodFrequencyResponse,
   IngredientsListResponse,
   IngredientFrequencyResponse,
@@ -46,6 +49,28 @@ export function updateFood(id: string, data: UpdateFoodRequest): Promise<Food> {
 
 export function deleteFood(id: string): Promise<void> {
   return userFetch<void>(`/foods/${id}`, { method: "DELETE" });
+}
+
+export function addFoodPortion(foodId: string, data: PortionRequest): Promise<Portion> {
+  return userFetch<Portion>(`/foods/${foodId}/portions`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateFoodPortion(
+  foodId: string,
+  portionId: string,
+  data: UpdatePortionRequest
+): Promise<Portion> {
+  return userFetch<Portion>(`/foods/${foodId}/portions/${portionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteFoodPortion(foodId: string, portionId: string): Promise<void> {
+  return userFetch<void>(`/foods/${foodId}/portions/${portionId}`, { method: "DELETE" });
 }
 
 export function getFoodUnits(id: string): Promise<string[]> {
