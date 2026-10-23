@@ -47,7 +47,13 @@ import { useMealTags } from "@/lib/hooks/use-tags";
 import type { Meal, MealItemRequest, MealPhotoRequest, MealStatus } from "@/lib/types/meal";
 import type { Food } from "@/lib/types/food";
 import { useMediaUpload, type UploadedPhoto } from "@/lib/hooks/use-media";
-import { getAvailableUnits, isMetricUnit, buildUnitMap } from "@/lib/food-units";
+import {
+  getAvailableUnits,
+  isMetricUnit,
+  buildUnitMap,
+  buildPortionIds,
+  unitFields,
+} from "@/lib/food-units";
 import { AiAnalyzePanel, type AiAppliedItem } from "@/components/ai-analyze-panel";
 import { MEASUREMENT_METHODS, getMethodLabel } from "@/lib/measurement-method";
 import { fmtCal, fmtGrams } from "@/lib/format";
@@ -81,6 +87,7 @@ interface MealItemRow {
   food_base_quantity: number;
   food_conversion_units: string[];
   food_unit_map: Record<string, number>;
+  food_portion_ids: Record<string, string>;
   measurement_method: string;
   associatedPhotoUrls: string[];
   primaryPhotoUrl: string | null;
@@ -292,6 +299,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       food_base_quantity: 0,
       food_conversion_units: [],
       food_unit_map: {},
+      food_portion_ids: i.input_portion_id ? { [i.input_unit]: i.input_portion_id } : {},
       measurement_method: i.measurement_method ?? "",
       associatedPhotoUrls: defaultValues.photos
         .filter((p) => p.meal_item_id === i.id)
@@ -336,6 +344,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
           food_base_quantity: food.base_quantity,
           food_conversion_units: allUnits.filter((u) => u !== food.base_unit),
           food_unit_map: buildUnitMap(food),
+          food_portion_ids: { ...item.food_portion_ids, ...buildPortionIds(food) },
         };
       })
     );
@@ -419,7 +428,12 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
 
   /* Preview */
   const previewItems = useMemo(
-    () => items.map((i) => ({ food_id: i.food_id, quantity: Number(i.quantity), unit: i.unit })),
+    () =>
+      items.map((i) => ({
+        food_id: i.food_id,
+        quantity: Number(i.quantity),
+        ...unitFields(i.unit, i.food_portion_ids),
+      })),
     [items]
   );
   const { data: preview, isFetching: previewLoading, error: previewError } = useMealPreview(previewItems);
@@ -566,6 +580,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
         food_base_quantity: food.base_quantity,
         food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),
         food_unit_map: buildUnitMap(food),
+        food_portion_ids: buildPortionIds(food),
         measurement_method: "",
         associatedPhotoUrls: [],
         primaryPhotoUrl: null,
@@ -593,6 +608,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
           food_base_quantity: a.food.base_quantity,
           food_conversion_units: avail.filter((u) => u !== a.food.base_unit),
           food_unit_map: buildUnitMap(a.food),
+          food_portion_ids: buildPortionIds(a.food),
           measurement_method: a.measurement_method,
           associatedPhotoUrls: [],
           primaryPhotoUrl: null,
@@ -650,7 +666,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       items: items.map((i) => ({
         food_id: i.food_id,
         quantity: Number(i.quantity),
-        unit: i.unit,
+        ...unitFields(i.unit, i.food_portion_ids),
         measurement_method: i.measurement_method || undefined,
         notes: i.notes,
       })),

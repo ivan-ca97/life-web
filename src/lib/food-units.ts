@@ -42,6 +42,24 @@ export function isMetricUnit(unit: string): boolean {
   return ALL_METRIC.has(unit);
 }
 
+/** Each portion name of the food, with the id of that portion. */
+export function buildPortionIds(food: Food): Record<string, string> {
+  const ids: Record<string, string> = {};
+  for (const p of food.portions) {
+    ids[p.name] = p.id;
+  }
+  return ids;
+}
+
+/** A portion goes to the API by its id; a metric unit by its name. */
+export function unitFields(
+  unit: string,
+  portionIds: Record<string, string>
+): { unit: string } | { portion_id: string } {
+  const portionId = portionIds[unit];
+  return portionId ? { portion_id: portionId } : { unit };
+}
+
 const METRIC_FACTORS: Record<string, Record<string, number>> = {
   mass: { mg: 0.001, g: 1, kg: 1000 },
   volume: { ml: 1, cl: 10, dl: 100, l: 1000 },

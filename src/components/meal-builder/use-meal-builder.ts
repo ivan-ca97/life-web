@@ -7,7 +7,7 @@ import { useCreateMeal, useMealPreview } from "@/lib/hooks/use-meals";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Food } from "@/lib/types/food";
-import { getAvailableUnits, isMetricUnit } from "@/lib/food-units";
+import { getAvailableUnits, isMetricUnit, buildPortionIds, unitFields } from "@/lib/food-units";
 import type { CreateMealRequest, MealPhotoRequest } from "@/lib/types/meal";
 import type { UploadedPhoto } from "@/lib/hooks/use-media";
 
@@ -19,6 +19,7 @@ export interface BuilderItem {
   food_base_unit: string;
   food_base_quantity: number;
   food_conversion_units: string[];
+  food_portion_ids: Record<string, string>;
   measurement_method: string;
   photos: UploadedPhoto[];
   notes: string;
@@ -55,6 +56,7 @@ export function useMealBuilder() {
           food_base_unit: food.base_unit,
           food_base_quantity: food.base_quantity,
           food_conversion_units: getAvailableUnits(food).filter((u) => u !== food.base_unit),
+          food_portion_ids: buildPortionIds(food),
           measurement_method: "",
           photos: [],
           notes: "",
@@ -97,7 +99,7 @@ export function useMealBuilder() {
         .map((i) => ({
           food_id: i.food_id,
           quantity: Number(i.quantity),
-          unit: i.unit,
+          ...unitFields(i.unit, i.food_portion_ids),
         })),
     [items]
   );
@@ -124,7 +126,7 @@ export function useMealBuilder() {
         items: items.map((i) => ({
           food_id: i.food_id,
           quantity: Number(i.quantity) || 0,
-          unit: i.unit,
+          ...unitFields(i.unit, i.food_portion_ids),
           measurement_method: i.measurement_method || undefined,
           notes: i.notes || undefined,
         })),

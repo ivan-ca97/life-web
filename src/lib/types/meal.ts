@@ -8,6 +8,7 @@ export interface MealItem {
   food_name: string;
   input_quantity: number;
   input_unit: string;
+  input_portion_id?: string;
   normalized_quantity: number;
   normalized_unit: string;
   calories: number | null;
@@ -50,10 +51,12 @@ export interface Meal {
 
 export type MealPage = PaginatedResponse<Meal>;
 
+/** Measured in a metric unit or in one of the food's portions (quantity = how many). */
 export interface MealItemRequest {
   food_id: string;
   quantity: number;
-  unit: string;
+  unit?: string;
+  portion_id?: string;
   measurement_method?: string;
   notes?: string;
 }
@@ -91,7 +94,8 @@ export interface MealTypesResponse {
 export interface MealPreviewItem {
   food_id: string;
   quantity: number;
-  unit: string;
+  unit?: string;
+  portion_id?: string;
 }
 
 export interface MealPreviewRequest {
