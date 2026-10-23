@@ -19,7 +19,6 @@ import {
 const MEASUREMENT_LABELS: Record<string, string> = {
   mass: "Peso",
   volume: "Volumen",
-  unit: "Unidad",
 };
 
 interface FoodDetailDialogProps {
@@ -164,7 +163,7 @@ export function FoodDetailDialog({ open, onOpenChange, foodId, food: foodProp }:
               )}
 
               {/* Conversiones */}
-              {(food.volume_conversion || food.unit_conversion) && (
+              {food.volume_conversion && (
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-medium">Conversiones</h4>
                   <ul className="space-y-1 text-sm">
@@ -173,14 +172,6 @@ export function FoodDetailDialog({ open, onOpenChange, foodId, food: foodProp }:
                         <span>1 ml = {food.volume_conversion.grams_per_ml} g</span>
                         {food.volume_conversion.note && (
                           <span className="text-xs italic">({food.volume_conversion.note})</span>
-                        )}
-                      </li>
-                    )}
-                    {food.unit_conversion && (
-                      <li className="flex items-center gap-1.5 text-muted-foreground">
-                        <span>1 u = {food.unit_conversion.base_equivalent} {food.base_unit}</span>
-                        {food.unit_conversion.note && (
-                          <span className="text-xs italic">({food.unit_conversion.note})</span>
                         )}
                       </li>
                     )}

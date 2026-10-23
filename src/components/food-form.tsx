@@ -32,13 +32,11 @@ import type {
 const MEASUREMENT_TYPE_LABELS: Record<MeasurementType, string> = {
   mass: "Peso (g, kg, mg)",
   volume: "Volumen (ml, cl, dl, l)",
-  unit: "Unidad (u)",
 };
 
 const UNITS_BY_DIMENSION: Record<MeasurementType, string[]> = {
   mass: ["mg", "g", "kg"],
   volume: ["ml", "cl", "dl", "l"],
-  unit: ["u"],
 };
 
 interface PortionRow {
@@ -90,12 +88,6 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
   );
   const [volumeNote, setVolumeNote] = useState(
     defaultValues?.volume_conversion?.note ?? ""
-  );
-  const [unitBaseEquivalent, setUnitBaseEquivalent] = useState(
-    defaultValues?.unit_conversion?.base_equivalent?.toString() ?? ""
-  );
-  const [unitNote, setUnitNote] = useState(
-    defaultValues?.unit_conversion?.note ?? ""
   );
   const [portions, setPortions] = useState<PortionRow[]>(
     defaultValues?.portions?.map((p) => ({
@@ -178,12 +170,7 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       conversions.volume_conversion = { grams_per_ml: gpm };
       if (volumeNote.trim()) conversions.volume_conversion.note = volumeNote.trim();
     }
-    const ube = Number(unitBaseEquivalent);
-    if (ube > 0) {
-      conversions.unit_conversion = { base_equivalent: ube };
-      if (unitNote.trim()) conversions.unit_conversion.note = unitNote.trim();
-    }
-    const hasConversions = conversions.volume_conversion || conversions.unit_conversion;
+    const hasConversions = conversions.volume_conversion !== undefined;
 
     const validPortions = portions
       .filter((p) => p.name.trim() && Number(p.base_equivalent) > 0)
@@ -230,11 +217,8 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
             const currentUnit = watch("base_unit");
             const units = UNITS_BY_DIMENSION[mt];
             if (!currentUnit || !units.includes(currentUnit)) {
-              const defaultUnit = mt === "mass" ? "g" : mt === "volume" ? "ml" : "u";
+              const defaultUnit = mt === "mass" ? "g" : "ml";
               setValue("base_unit", defaultUnit);
-            }
-            if (mt === "unit" && !watch("base_quantity")) {
-              setValue("base_quantity", "1");
             }
           }}
         >
@@ -244,7 +228,6 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
           <SelectContent>
             <SelectItem value="mass" label="Peso (g, kg, mg)">Peso (g, kg, mg)</SelectItem>
             <SelectItem value="volume" label="Volumen (ml, cl, dl, l)">Volumen (ml, cl, dl, l)</SelectItem>
-            <SelectItem value="unit" label="Unidad (u)">Unidad (u)</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -437,60 +420,31 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       {/* Conversiones */}
       <div className="space-y-3">
         <Label>Conversiones</Label>
-        {(measurementType === "mass" || measurementType === "volume") && (
-          <Card>
-            <CardContent className="p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Densidad (g/ml)
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground shrink-0">1 ml =</span>
-                <Input
-                  type="number"
-                  step="any"
-                  min="0"
-                  placeholder="Ej: 0.92"
-                  value={gramsPerMl}
-                  onChange={(e) => setGramsPerMl(e.target.value)}
-                  className="flex-1"
-                />
-                <span className="text-sm font-medium shrink-0">g</span>
-              </div>
+        <Card>
+          <CardContent className="p-3 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Densidad (g/ml)
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground shrink-0">1 ml =</span>
               <Input
-                placeholder="Nota (ej: leche entera)"
-                value={volumeNote}
-                onChange={(e) => setVolumeNote(e.target.value)}
+                type="number"
+                step="any"
+                min="0"
+                placeholder="Ej: 0.92"
+                value={gramsPerMl}
+                onChange={(e) => setGramsPerMl(e.target.value)}
+                className="flex-1"
               />
-            </CardContent>
-          </Card>
-        )}
-        {measurementType === "unit" && (
-          <Card>
-            <CardContent className="p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Equivalencia por unidad
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground shrink-0">1 u =</span>
-                <Input
-                  type="number"
-                  step="any"
-                  min="0"
-                  placeholder="Ej: 50"
-                  value={unitBaseEquivalent}
-                  onChange={(e) => setUnitBaseEquivalent(e.target.value)}
-                  className="flex-1"
-                />
-                <span className="text-sm font-medium shrink-0">g</span>
-              </div>
-              <Input
-                placeholder="Nota (ej: huevo mediano)"
-                value={unitNote}
-                onChange={(e) => setUnitNote(e.target.value)}
-              />
-            </CardContent>
-          </Card>
-        )}
+              <span className="text-sm font-medium shrink-0">g</span>
+            </div>
+            <Input
+              placeholder="Nota (ej: leche entera)"
+              value={volumeNote}
+              onChange={(e) => setVolumeNote(e.target.value)}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Publico */}

@@ -3,10 +3,9 @@ import type { Food } from "@/lib/types/food";
 const METRIC_UNITS: Record<string, string[]> = {
   mass: ["mg", "g", "kg"],
   volume: ["ml", "cl", "dl", "l"],
-  unit: ["u"],
 };
 
-const ALL_METRIC = new Set([...METRIC_UNITS.mass, ...METRIC_UNITS.volume, "u"]);
+const ALL_METRIC = new Set([...METRIC_UNITS.mass, ...METRIC_UNITS.volume]);
 
 export function getAvailableUnits(food: Food): string[] {
   const units: string[] = [];
@@ -25,10 +24,6 @@ export function getAvailableUnits(food: Food): string[] {
     for (const u of METRIC_UNITS.mass) {
       if (!units.includes(u)) units.push(u);
     }
-  }
-
-  if (food.unit_conversion && food.measurement_type !== "unit") {
-    units.push("u");
   }
 
   for (const p of food.portions) {
@@ -83,10 +78,6 @@ export function buildUnitMap(food: Food): Record<string, number> {
       map["g"] = 1 / gpm;
       map["kg"] = 1000 / gpm;
     }
-  }
-
-  if (food.unit_conversion) {
-    map["u"] = food.unit_conversion.base_equivalent;
   }
 
   for (const p of food.portions) {

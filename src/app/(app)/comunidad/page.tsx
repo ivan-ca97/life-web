@@ -19,7 +19,6 @@ import type { Food } from "@/lib/types/food";
 const MEASUREMENT_LABELS: Record<string, string> = {
   mass: "Peso",
   volume: "Volumen",
-  unit: "Unidad",
 };
 
 export default function ComunidadPage() {
