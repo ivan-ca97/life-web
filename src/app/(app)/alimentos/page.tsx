@@ -19,8 +19,19 @@ import { FoodDetailDialog } from "@/components/food-detail-dialog";
 import { DraggableFoodRow } from "@/components/meal-builder/draggable-food-row";
 import { MealBuilderPanel } from "@/components/meal-builder/meal-builder-panel";
 import { useMealBuilder } from "@/components/meal-builder/use-meal-builder";
+import { ApiError } from "@/lib/api/client";
 import { fmtCal } from "@/lib/format";
 import type { Food } from "@/lib/types/food";
+
+function deleteErrorMessage(err: Error): string {
+  if (err instanceof ApiError && err.status === 409) {
+    const mealItems = err.details?.meal_items;
+    if (typeof mealItems === "number") {
+      return `No se puede eliminar: se usa en ${mealItems} ${mealItems === 1 ? "registro" : "registros"} de comidas`;
+    }
+  }
+  return err.message;
+}
 
 export default function AlimentosPage() {
   const [query, setQuery] = useState("");
@@ -41,7 +52,7 @@ export default function AlimentosPage() {
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
       onSuccess: () => toast.success("Alimento eliminado"),
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(deleteErrorMessage(err)),
     });
   }
 

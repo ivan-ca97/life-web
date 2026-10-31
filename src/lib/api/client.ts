@@ -2,10 +2,12 @@ const API_BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/
 
 export class ApiError extends Error {
   status: number;
+  details?: Record<string, unknown>;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, details?: Record<string, unknown>) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -44,6 +46,7 @@ export function clearUserId(): void {
 const ERROR_TRANSLATIONS: Record<string, string> = {
   "day is closed": "El dia esta cerrado",
   "invalid credentials": "Credenciales invalidas",
+  "the food is used in meals and cannot be deleted": "El alimento se usa en comidas y no se puede eliminar",
 };
 
 function translateError(msg: string): string {
@@ -86,13 +89,15 @@ export async function apiFetch<T>(
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     let message = text;
+    let details: Record<string, unknown> | undefined;
     try {
       const parsed = JSON.parse(text);
       message = parsed.error ?? text;
+      details = parsed.details;
     } catch {
       // Cuerpo no-JSON (ej: 404 text/plain, error de proxy): usamos el texto crudo.
     }
-    throw new ApiError(response.status, translateError(message) || `Error ${response.status}`);
+    throw new ApiError(response.status, translateError(message) || `Error ${response.status}`, details);
   }
 
   return response.json();
