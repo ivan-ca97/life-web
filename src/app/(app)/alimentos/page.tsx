@@ -5,6 +5,8 @@ import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from 
 import { Plus, Search, UtensilsCrossed, X, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useFoods, useDeleteFood } from "@/lib/hooks/use-foods";
+import { useOwnedShares, useCreateShare, useDeleteShare } from "@/lib/hooks/use-shares";
+import { publicFoodShare } from "@/lib/share-labels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +47,28 @@ export default function AlimentosPage() {
 
   const { data, isLoading } = useFoods({ q: query, tag, sort: sort || undefined, limit, offset });
   const deleteMutation = useDeleteFood();
+  const { data: sharesData } = useOwnedShares();
+  const createShareMutation = useCreateShare();
+  const deleteShareMutation = useDeleteShare();
+  const ownedShares = sharesData?.items ?? [];
+
+  function handleTogglePublic(food: Food) {
+    const share = publicFoodShare(ownedShares, food.id);
+    if (share) {
+      deleteShareMutation.mutate(share.id, {
+        onSuccess: () => toast.success(`"${food.name}" ya no es publico`),
+        onError: (err) => toast.error(err.message),
+      });
+      return;
+    }
+    createShareMutation.mutate(
+      { permission: "foods:read", scope: "item", resource_id: food.id, audience: "public" },
+      {
+        onSuccess: () => toast.success(`"${food.name}" ahora es visible para todos`),
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  }
   const builder = useMealBuilder();
   const isMobile = useIsMobile();
   const [activeDragFood, setActiveDragFood] = useState<Food | null>(null);
@@ -180,6 +204,8 @@ export default function AlimentosPage() {
                     setSheetOpen(true);
                   }}
                   onDelete={handleDelete}
+                  isPublic={!!publicFoodShare(ownedShares, food.id)}
+                  onTogglePublic={handleTogglePublic}
                 />
               ))}
             </CardContent>

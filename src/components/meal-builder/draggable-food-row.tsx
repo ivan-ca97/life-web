@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { Plus, Check, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Check, Eye, Pencil, Trash2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -21,6 +21,9 @@ interface DraggableFoodRowProps {
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  /** Whether the food is visible to everyone; the toggle shows only when given. */
+  isPublic?: boolean;
+  onTogglePublic?: (food: Food) => void;
 }
 
 export function DraggableFoodRow({
@@ -31,6 +34,8 @@ export function DraggableFoodRow({
   onView,
   onEdit,
   onDelete,
+  isPublic,
+  onTogglePublic,
 }: DraggableFoodRowProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: food.id,
@@ -73,6 +78,12 @@ export function DraggableFoodRow({
               {t}
             </Badge>
           ))}
+          {isPublic && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Globe className="size-3" />
+              Publico
+            </Badge>
+          )}
         </div>
         {(food.default_calories != null || food.base_quantity != null) && (
           <p className="text-sm text-muted-foreground mt-0.5 truncate">
@@ -111,6 +122,17 @@ export function DraggableFoodRow({
         >
           <Eye className="size-4" />
         </Button>
+        {onTogglePublic && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title={isPublic ? "Dejar de mostrar a todos" : "Mostrar a todos"}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onTogglePublic(food)}
+          >
+            <Globe className={`size-4 ${isPublic ? "text-primary" : ""}`} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon-sm"
