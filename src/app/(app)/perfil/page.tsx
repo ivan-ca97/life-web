@@ -35,6 +35,7 @@ export default function PerfilPage() {
   const { data: photosData } = useProfilePhotos();
 
   const [username, setUsername] = useState("");
+  const [discoverable, setDiscoverable] = useState(false);
   const [heightCm, setHeightCm] = useState<string>("");
   const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState("");
@@ -46,6 +47,7 @@ export default function PerfilPage() {
 
   if (!initialized && user) {
     setUsername(user.username ?? "");
+    setDiscoverable(user.discoverable ?? false);
     setHeightCm(user.height_cm != null ? String(user.height_cm) : "");
     setBirthDate(user.birth_date ?? "");
     setSex(user.sex ?? "");
@@ -96,6 +98,7 @@ export default function PerfilPage() {
 
     const data: Record<string, unknown> = {};
     if (username !== (user!.username ?? "")) data.username = username || undefined;
+    if (discoverable !== (user!.discoverable ?? false)) data.discoverable = discoverable;
     if (heightCm && !isNaN(h) && h !== user!.height_cm) data.height_cm = h;
     if (birthDate && birthDate !== user!.birth_date) data.birth_date = birthDate;
     if (sex && sex !== user!.sex) data.sex = sex;
@@ -173,6 +176,15 @@ export default function PerfilPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="usuario123"
             />
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={discoverable}
+                onChange={(e) => setDiscoverable(e.target.checked)}
+              />
+              Que me encuentren por mi nombre de usuario para compartirme cosas
+            </label>
           </div>
 
           {photos.length > 1 && (

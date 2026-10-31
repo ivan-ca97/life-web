@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { User, UserPage, CreateUserRequest, UpdateUserRequest } from "@/lib/types/user";
+import type { User, UserPage, CreateUserRequest, UpdateUserRequest, PublicUser } from "@/lib/types/user";
 
 export function getUsers(params: {
   limit?: number;
@@ -31,4 +31,9 @@ export function updateUser(id: string, data: UpdateUserRequest): Promise<User> {
 
 export function deleteUser(id: string): Promise<void> {
   return apiFetch<void>(`/users/${id}`, { method: "DELETE" });
+}
+
+/** A user who chose to be found, by their exact username. */
+export function findDiscoverableUser(username: string): Promise<PublicUser> {
+  return apiFetch<PublicUser>(`/users/search?username=${encodeURIComponent(username)}`);
 }

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
-import { Plus, Search, UtensilsCrossed, X, ArrowUpDown } from "lucide-react";
+import { Plus, Search, UtensilsCrossed, X, ArrowUpDown, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFoods, useDeleteFood } from "@/lib/hooks/use-foods";
 import { useOwnedShares, useCreateShare, useDeleteShare } from "@/lib/hooks/use-shares";
 import { publicFoodShare } from "@/lib/share-labels";
+import { ShareDialog } from "@/components/share-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,8 @@ export default function AlimentosPage() {
   const createShareMutation = useCreateShare();
   const deleteShareMutation = useDeleteShare();
   const ownedShares = sharesData?.items ?? [];
+  const [sharingFood, setSharingFood] = useState<Food | null>(null);
+  const [sharingAll, setSharingAll] = useState(false);
 
   function handleTogglePublic(food: Food) {
     const share = publicFoodShare(ownedShares, food.id);
@@ -124,6 +127,10 @@ export default function AlimentosPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Alimentos</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setSharingAll(true)}>
+            <Share2 className="size-4 mr-1" />
+            Compartir
+          </Button>
           <Button variant="outline" onClick={() => builder.setOpen(true)}>
             <UtensilsCrossed className="size-4 mr-1" />
             Nueva comida
@@ -206,6 +213,7 @@ export default function AlimentosPage() {
                   onDelete={handleDelete}
                   isPublic={!!publicFoodShare(ownedShares, food.id)}
                   onTogglePublic={handleTogglePublic}
+                  onShare={setSharingFood}
                 />
               ))}
             </CardContent>
@@ -276,6 +284,25 @@ export default function AlimentosPage() {
           foodId={viewingFoodId}
         />
       )}
+      {sharingFood && (
+        <ShareDialog
+          open={!!sharingFood}
+          onOpenChange={(open) => {
+            if (!open) setSharingFood(null);
+          }}
+          title={`Compartir "${sharingFood.name}"`}
+          description="La persona va a poder ver este alimento y usarlo en sus comidas."
+          item={{ id: sharingFood.id, name: sharingFood.name }}
+          permissionFilter={(p) => p.permission.startsWith("foods:")}
+        />
+      )}
+      <ShareDialog
+        open={sharingAll}
+        onOpenChange={setSharingAll}
+        title="Compartir mis alimentos"
+        description="Todos tus alimentos, incluidos los que crees despues."
+        permissionFilter={(p) => p.permission.startsWith("foods:")}
+      />
     </DndContext>
   );
 }

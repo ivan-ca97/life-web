@@ -1,6 +1,7 @@
 "use client";
 
-import { Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { useState } from "react";
+import { Trash2, ArrowDownToLine, ArrowUpFromLine, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatAr } from "@/lib/datetime";
 import { useOwnedShares, useReceivedShares, useDeleteShare } from "@/lib/hooks/use-shares";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ShareDialog } from "@/components/share-dialog";
 import type { Share } from "@/lib/types/share";
 
 function ShareRow({ share, onDelete }: { share: Share; onDelete?: () => void }) {
@@ -100,6 +102,7 @@ export default function CompartirPage() {
   const { data: ownedData, isLoading: ownedLoading } = useOwnedShares();
   const { data: receivedData, isLoading: receivedLoading } = useReceivedShares();
   const deleteMutation = useDeleteShare();
+  const [sharing, setSharing] = useState(false);
 
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
@@ -110,12 +113,24 @@ export default function CompartirPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Compartir</h1>
-        <p className="text-sm text-muted-foreground">
-          Para hacer publico un alimento, usa el globo en tu lista de alimentos.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Compartir</h1>
+          <p className="text-sm text-muted-foreground">
+            Para hacer publico un alimento, usa el globo en tu lista de alimentos.
+          </p>
+        </div>
+        <Button onClick={() => setSharing(true)}>
+          <Share2 className="size-4 mr-1" />
+          Compartir
+        </Button>
       </div>
+      <ShareDialog
+        open={sharing}
+        onOpenChange={setSharing}
+        title="Compartir con un usuario"
+        description="Elegi que va a poder hacer con tus datos."
+      />
       <ShareList
         title="Compartidos por mi"
         icon={<ArrowUpFromLine className="size-4" />}

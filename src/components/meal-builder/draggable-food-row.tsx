@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { Plus, Check, Eye, Pencil, Trash2, Globe } from "lucide-react";
+import { Plus, Check, Eye, Pencil, Trash2, Globe, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -24,6 +24,7 @@ interface DraggableFoodRowProps {
   /** Whether the food is visible to everyone; the toggle shows only when given. */
   isPublic?: boolean;
   onTogglePublic?: (food: Food) => void;
+  onShare?: (food: Food) => void;
 }
 
 export function DraggableFoodRow({
@@ -36,6 +37,7 @@ export function DraggableFoodRow({
   onDelete,
   isPublic,
   onTogglePublic,
+  onShare,
 }: DraggableFoodRowProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: food.id,
@@ -122,6 +124,17 @@ export function DraggableFoodRow({
         >
           <Eye className="size-4" />
         </Button>
+        {onShare && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Compartir con un usuario"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onShare(food)}
+          >
+            <Share2 className="size-4" />
+          </Button>
+        )}
         {onTogglePublic && (
           <Button
             variant="ghost"
