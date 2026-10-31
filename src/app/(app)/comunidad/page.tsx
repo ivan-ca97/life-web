@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Globe, Eye, Copy, Check, X } from "lucide-react";
-import { toast } from "sonner";
-import { useCommunityFoods, useCopyFood } from "@/lib/hooks/use-foods";
+import { Search, Globe, Eye, Check, X } from "lucide-react";
+import { useCommunityFoods } from "@/lib/hooks/use-foods";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,14 +28,6 @@ export default function ComunidadPage() {
 
   const { userId } = useAuth();
   const { data, isLoading } = useCommunityFoods({ q: query, limit, offset });
-  const copyMutation = useCopyFood();
-
-  function handleCopy(food: Food) {
-    copyMutation.mutate(food.id, {
-      onSuccess: () => toast.success(`"${food.name}" agregado a tus alimentos`),
-      onError: (err) => toast.error(err.message),
-    });
-  }
 
   return (
     <div className="space-y-4">
@@ -45,7 +36,7 @@ export default function ComunidadPage() {
         <h1 className="text-2xl font-semibold">Comunidad</h1>
       </div>
       <p className="text-sm text-muted-foreground">
-        Alimentos publicos de todos los usuarios. Copialos a tu coleccion para usarlos en tus comidas.
+        Alimentos publicos de todos los usuarios. Podes usarlos directamente en tus comidas.
       </p>
 
       <div className="flex gap-2">
@@ -133,21 +124,11 @@ export default function ComunidadPage() {
                       >
                         <Eye className="size-4" />
                       </Button>
-                      {isOwn ? (
+                      {isOwn && (
                         <Badge variant="outline" className="gap-1">
                           <Check className="size-3" />
                           Tuyo
                         </Badge>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCopy(food)}
-                          disabled={copyMutation.isPending}
-                        >
-                          <Copy className="size-4 mr-1" />
-                          Copiar
-                        </Button>
                       )}
                     </div>
                   </div>

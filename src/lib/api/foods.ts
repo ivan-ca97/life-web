@@ -124,8 +124,3 @@ export function getCommunityFoods(params: {
   if (params.offset) search.set("offset", String(params.offset));
   return apiFetch<FoodPage>(`/foods/community?${search}`);
 }
-
-/** Copy a food to the current user's collection */
-export function copyFood(id: string): Promise<Food> {
-  return userFetch<Food>(`/foods/${id}/copy`, { method: "POST" });
-}
