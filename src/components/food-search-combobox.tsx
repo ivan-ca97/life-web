@@ -18,7 +18,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { useFoods } from "@/lib/hooks/use-foods";
+import { useUsableFoods } from "@/lib/hooks/use-foods";
+import { useAuth } from "@/lib/auth/context";
 import type { Food } from "@/lib/types/food";
 
 interface FoodSearchComboboxProps {
@@ -29,7 +30,8 @@ interface FoodSearchComboboxProps {
 export function FoodSearchCombobox({ onSelect, excludeIds = [] }: FoodSearchComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { data, isFetching } = useFoods({ q: search, limit: 20 });
+  const { userId } = useAuth();
+  const { data, isFetching } = useUsableFoods({ q: search, limit: 20 });
 
   const foods = (data?.items ?? []).filter((f) => !excludeIds.includes(f.id));
 
@@ -71,6 +73,11 @@ export function FoodSearchCombobox({ onSelect, excludeIds = [] }: FoodSearchComb
                   <Check className={cn("mr-2 size-4", "opacity-0")} />
                   <div className="flex-1 min-w-0">
                     <span>{food.name}</span>
+                    {userId != null && food.user_id !== userId && (
+                      <Badge variant="secondary" className="ml-1 text-[10px] px-1 py-0">
+                        Compartido
+                      </Badge>
+                    )}
                     {food.tags.length > 0 && (
                       <div className="flex gap-1 mt-0.5">
                         {food.tags.slice(0, 3).map((t) => (

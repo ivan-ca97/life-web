@@ -73,6 +73,15 @@ export function deleteFoodPortion(foodId: string, portionId: string): Promise<vo
   return userFetch<void>(`/foods/${foodId}/portions/${portionId}`, { method: "DELETE" });
 }
 
+/** Foods the current user can use in meals: their own, and those shared with them or with everyone. */
+export function getUsableFoods(params: { q?: string; limit?: number; offset?: number }): Promise<FoodPage> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.offset) search.set("offset", String(params.offset));
+  return userFetch<FoodPage>(`/foods/usable?${search}`);
+}
+
 export function getFoodUnits(id: string): Promise<string[]> {
   return userFetch<string[]>(`/foods/${id}/units`);
 }

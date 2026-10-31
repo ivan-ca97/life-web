@@ -100,6 +100,13 @@ export function useDeleteFoodPortion(foodId: string) {
   });
 }
 
+export function useUsableFoods(params: { q?: string; limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ["foods", "usable", params],
+    queryFn: () => foodsApi.getUsableFoods(params),
+  });
+}
+
 export function useCommunityFoods(params: {
   q?: string;
   limit?: number;
