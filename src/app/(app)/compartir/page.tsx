@@ -12,18 +12,27 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ShareDialog } from "@/components/share-dialog";
+import { UserName } from "@/components/user-name";
 import { FoodDetailDialog } from "@/components/food-detail-dialog";
 import { FoodFormSheet } from "@/components/food-form-sheet";
 import type { Share } from "@/lib/types/share";
 
-function who(share: Share, received: boolean): string {
+function Who({ share, received }: { share: Share; received: boolean }) {
   if (received) {
-    return share.owner_username ? `de @${share.owner_username}` : "de un usuario sin nombre";
+    return (
+      <>
+        de <UserName userId={share.owner_id} />
+      </>
+    );
   }
   if (share.audience === "public") {
-    return "con todos";
+    return <>con todos</>;
   }
-  return share.grantee_username ? `con @${share.grantee_username}` : "con un usuario sin nombre";
+  return (
+    <>
+      con <UserName userId={share.grantee_id} />
+    </>
+  );
 }
 
 /** A food shared on its own that the user received, to view or edit. */
@@ -55,7 +64,9 @@ function ShareRow({
           <Badge variant="secondary" className="text-xs">
             {share.scope === "item" ? "Un elemento" : "Todo"}
           </Badge>
-          <span className="text-sm">{who(share, received)}</span>
+          <span className="text-sm">
+            <Who share={share} received={received} />
+          </span>
           {!share.active && (
             <Badge variant="destructive" className="text-xs">
               Sin efecto

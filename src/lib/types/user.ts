@@ -14,11 +14,10 @@ export interface User {
   created_at: string;
 }
 
-/** What any user can learn about another one: enough to share with them. */
+/** All a user can learn about another one: their username. */
 export interface PublicUser {
   id: string;
   username?: string;
-  photo_url: string;
 }
 
 export type UserPage = PaginatedResponse<User>;

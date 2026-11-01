@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Trash2, UserRound } from "lucide-react";
+import { Check, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api/client";
 import { createShare } from "@/lib/api/shares";
-import { findDiscoverableUser } from "@/lib/api/users";
+import { searchUsers } from "@/lib/api/users";
+import { UserName } from "@/components/user-name";
 import { useShareablePermissions } from "@/lib/hooks/use-permissions";
 import { useDeleteShare, useOwnedShares } from "@/lib/hooks/use-shares";
 import { permissionLabel } from "@/lib/share-labels";
@@ -49,7 +49,12 @@ export function ShareDialog({
 
   const [username, setUsername] = useState("");
   const [grantee, setGrantee] = useState<PublicUser | null>(null);
-  const [searching, setSearching] = useState(false);
+  const searchText = username.trim();
+  const { data: found, isFetching: searching } = useQuery({
+    queryKey: ["users", "search", searchText],
+    queryFn: () => searchUsers(searchText),
+    enabled: searchText.length >= 2 && !grantee,
+  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -63,25 +68,6 @@ export function ShareDialog({
       offeredNames.has(s.permission) &&
       (item ? s.scope === "item" && s.resource_id === item.id : s.scope === "collection"),
   );
-
-  async function handleSearch() {
-    const name = username.trim();
-    if (!name) return;
-    setSearching(true);
-    setGrantee(null);
-    try {
-      const found = await findDiscoverableUser(name);
-      setGrantee(found);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
-        toast.error("No hay ningun usuario visible con ese nombre");
-      } else {
-        toast.error((err as Error).message);
-      }
-    } finally {
-      setSearching(false);
-    }
-  }
 
   function toggle(permission: string) {
     const next = new Set(selected);
@@ -132,35 +118,43 @@ export function ShareDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="share-username">Usuario</Label>
-            <div className="flex gap-2">
-              <Input
-                id="share-username"
-                placeholder="nombre de usuario"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  setGrantee(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              <Button variant="outline" onClick={handleSearch} disabled={searching || !username.trim()}>
-                <Search className="size-4" />
-              </Button>
-            </div>
+            <Input
+              id="share-username"
+              placeholder="buscar por nombre de usuario"
+              value={grantee ? `@${grantee.username ?? ""}` : username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setGrantee(null);
+              }}
+            />
             <p className="text-xs text-muted-foreground">
               Solo aparecen quienes activaron &quot;Que me encuentren&quot; en su perfil.
             </p>
-            {grantee && (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2">
-                {grantee.photo_url ? (
-                  <img src={grantee.photo_url} alt="" className="size-6 rounded-full object-cover" />
+            {!grantee && searchText.length >= 2 && (
+              <div className="rounded-md border divide-y divide-border">
+                {searching ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">Buscando...</p>
+                ) : (found?.items ?? []).length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">Nadie con ese nombre.</p>
                 ) : (
-                  <UserRound className="size-5 text-muted-foreground" />
+                  found!.items.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
+                      onClick={() => setGrantee(user)}
+                    >
+                      <UserRound className="size-4 text-muted-foreground" />@{user.username}
+                    </button>
+                  ))
                 )}
-                <span className="text-sm font-medium">@{grantee.username}</span>
               </div>
+            )}
+            {grantee && (
+              <p className="flex items-center gap-1 text-sm">
+                <Check className="size-4 text-primary" />
+                Vas a compartir con @{grantee.username}
+              </p>
             )}
           </div>
 
@@ -208,7 +202,7 @@ export function ShareDialog({
                     <span className="flex-1">
                       {permissionLabel(s.permission)}
                       <span className="text-muted-foreground">
-                        {" "}· {s.grantee_username ? `@${s.grantee_username}` : "usuario sin nombre"}
+                        {" "}· <UserName userId={s.grantee_id} />
                       </span>
                       {!s.active && <span className="text-destructive"> · sin efecto</span>}
                     </span>

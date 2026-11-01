@@ -16,6 +16,7 @@ import { formatAr } from "@/lib/datetime";
 import { fmtCal, fmtDuration, fmtGrams } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserName } from "@/components/user-name";
 
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -51,7 +52,6 @@ export default function SharedDataPage() {
     (s) => s.owner_id === ownerId && s.active && s.scope === "collection",
   );
   const granted = new Set(fromOwner.map((s) => s.permission));
-  const ownerName = fromOwner.find((s) => s.owner_username)?.owner_username;
   const today = isoDate(new Date());
 
   const meals = useQuery({
@@ -87,7 +87,7 @@ export default function SharedDataPage() {
         Compartir
       </Button>
       <h1 className="text-2xl font-semibold">
-        Datos de {ownerName ? `@${ownerName}` : "otro usuario"}
+        Datos de <UserName userId={ownerId} />
       </h1>
 
       {isLoading ? (

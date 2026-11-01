@@ -33,7 +33,12 @@ export function deleteUser(id: string): Promise<void> {
   return apiFetch<void>(`/users/${id}`, { method: "DELETE" });
 }
 
-/** A user who chose to be found, by their exact username. */
-export function findDiscoverableUser(username: string): Promise<PublicUser> {
-  return apiFetch<PublicUser>(`/users/search?username=${encodeURIComponent(username)}`);
+/** Users who chose to be found whose username contains the text. */
+export function searchUsers(text: string): Promise<{ items: PublicUser[] }> {
+  return apiFetch<{ items: PublicUser[] }>(`/users/search?q=${encodeURIComponent(text)}&limit=8`);
+}
+
+/** The username of a user the current one can see; not found for anyone else. */
+export function getUserProfile(id: string): Promise<PublicUser> {
+  return apiFetch<PublicUser>(`/users/${id}/profile`);
 }
