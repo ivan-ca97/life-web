@@ -16,13 +16,15 @@ interface FoodFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   foodId?: string;
+  /** The owner of a food someone shared with the user to edit. */
+  ownerId?: string;
 }
 
-export function FoodFormSheet({ open, onOpenChange, foodId }: FoodFormSheetProps) {
+export function FoodFormSheet({ open, onOpenChange, foodId, ownerId }: FoodFormSheetProps) {
   const isEdit = !!foodId;
-  const { data: food, isLoading } = useFood(foodId ?? "");
+  const { data: food, isLoading } = useFood(foodId ?? "", ownerId);
   const createMutation = useCreateFood();
-  const updateMutation = useUpdateFood(foodId ?? "");
+  const updateMutation = useUpdateFood(foodId ?? "", ownerId);
 
   const mutation = isEdit ? updateMutation : createMutation;
 
@@ -32,9 +34,11 @@ export function FoodFormSheet({ open, onOpenChange, foodId }: FoodFormSheetProps
         <SheetHeader>
           <SheetTitle>{isEdit ? "Editar alimento" : "Nuevo alimento"}</SheetTitle>
           <SheetDescription>
-            {isEdit
-              ? "Modifica los datos del alimento."
-              : "Registra un alimento con sus valores nutricionales."}
+            {ownerId
+              ? "Es un alimento que te compartieron: los cambios afectan a su dueno y a las comidas que lo usan."
+              : isEdit
+                ? "Modifica los datos del alimento."
+                : "Registra un alimento con sus valores nutricionales."}
           </SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-4">

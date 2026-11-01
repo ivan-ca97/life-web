@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2, ArrowDownToLine, ArrowUpFromLine, Share2, Eye } from "lucide-react";
+import { Trash2, ArrowDownToLine, ArrowUpFromLine, Share2, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { formatAr } from "@/lib/datetime";
 import { useOwnedShares, useReceivedShares, useDeleteShare } from "@/lib/hooks/use-shares";
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ShareDialog } from "@/components/share-dialog";
+import { FoodDetailDialog } from "@/components/food-detail-dialog";
+import { FoodFormSheet } from "@/components/food-form-sheet";
 import type { Share } from "@/lib/types/share";
 
 function who(share: Share, received: boolean): string {
@@ -24,15 +26,27 @@ function who(share: Share, received: boolean): string {
   return share.grantee_username ? `con @${share.grantee_username}` : "con un usuario sin nombre";
 }
 
+/** A food shared on its own that the user received, to view or edit. */
+interface SharedFood {
+  foodId: string;
+  ownerId: string;
+}
+
 function ShareRow({
   share,
   received,
   onDelete,
+  onOpenFood,
 }: {
   share: Share;
   received: boolean;
   onDelete?: () => void;
+  onOpenFood?: (food: SharedFood, edit: boolean) => void;
 }) {
+  const sharedFood =
+    received && share.active && share.scope === "item" && share.resource_id && share.permission.startsWith("foods:")
+      ? { foodId: share.resource_id, ownerId: share.owner_id }
+      : null;
   return (
     <div className="flex items-center gap-4 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -52,6 +66,18 @@ function ShareRow({
           {formatAr(share.created_at, "dd/MM/yyyy")}
         </p>
       </div>
+      {sharedFood && onOpenFood && share.permission === "foods:read" && (
+        <Button variant="ghost" size="sm" onClick={() => onOpenFood(sharedFood, false)}>
+          <Eye className="size-4 mr-1" />
+          Ver
+        </Button>
+      )}
+      {sharedFood && onOpenFood && share.permission === "foods:update" && (
+        <Button variant="ghost" size="sm" onClick={() => onOpenFood(sharedFood, true)}>
+          <Pencil className="size-4 mr-1" />
+          Editar
+        </Button>
+      )}
       {received && share.active && share.scope === "collection" && (
         <Button variant="ghost" size="sm" render={<Link href={`/compartido/${share.owner_id}`} />}>
           <Eye className="size-4 mr-1" />
@@ -83,6 +109,7 @@ function ShareList({
   empty,
   received,
   onDelete,
+  onOpenFood,
 }: {
   title: string;
   icon: React.ReactNode;
@@ -91,6 +118,7 @@ function ShareList({
   empty: string;
   received: boolean;
   onDelete?: (id: string) => void;
+  onOpenFood?: (food: SharedFood, edit: boolean) => void;
 }) {
   return (
     <Card>
@@ -116,6 +144,7 @@ function ShareList({
               share={share}
               received={received}
               onDelete={onDelete ? () => onDelete(share.id) : undefined}
+              onOpenFood={onOpenFood}
             />
           ))}
         </CardContent>
@@ -129,6 +158,16 @@ export default function CompartirPage() {
   const { data: receivedData, isLoading: receivedLoading } = useReceivedShares();
   const deleteMutation = useDeleteShare();
   const [sharing, setSharing] = useState(false);
+  const [viewingFood, setViewingFood] = useState<SharedFood | null>(null);
+  const [editingFood, setEditingFood] = useState<SharedFood | null>(null);
+
+  function openFood(food: SharedFood, edit: boolean) {
+    if (edit) {
+      setEditingFood(food);
+    } else {
+      setViewingFood(food);
+    }
+  }
 
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
@@ -173,7 +212,28 @@ export default function CompartirPage() {
         isLoading={receivedLoading}
         empty="Nadie te compartio nada todavia."
         received
+        onOpenFood={openFood}
       />
+      {viewingFood && (
+        <FoodDetailDialog
+          open={!!viewingFood}
+          onOpenChange={(open) => {
+            if (!open) setViewingFood(null);
+          }}
+          foodId={viewingFood.foodId}
+          ownerId={viewingFood.ownerId}
+        />
+      )}
+      {editingFood && (
+        <FoodFormSheet
+          open={!!editingFood}
+          onOpenChange={(open) => {
+            if (!open) setEditingFood(null);
+          }}
+          foodId={editingFood.foodId}
+          ownerId={editingFood.ownerId}
+        />
+      )}
     </div>
   );
 }

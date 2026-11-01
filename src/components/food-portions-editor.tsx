@@ -16,6 +16,8 @@ import type { Portion } from "@/lib/types/food";
 
 interface FoodPortionsEditorProps {
   foodId: string;
+  /** The food's owner; the portions are edited through their foods. */
+  ownerId?: string;
   portions: Portion[];
   baseUnit: string;
 }
@@ -34,12 +36,12 @@ function isValid(draft: PortionDraft): boolean {
 }
 
 /** Each change is saved on its own, apart from the rest of the food form. */
-export function FoodPortionsEditor({ foodId, portions, baseUnit }: FoodPortionsEditorProps) {
+export function FoodPortionsEditor({ foodId, ownerId, portions, baseUnit }: FoodPortionsEditorProps) {
   const [drafts, setDrafts] = useState<Record<string, PortionDraft>>({});
   const [newPortion, setNewPortion] = useState<PortionDraft | null>(null);
-  const addMutation = useAddFoodPortion(foodId);
-  const updateMutation = useUpdateFoodPortion(foodId);
-  const deleteMutation = useDeleteFoodPortion(foodId);
+  const addMutation = useAddFoodPortion(foodId, ownerId);
+  const updateMutation = useUpdateFoodPortion(foodId, ownerId);
+  const deleteMutation = useDeleteFoodPortion(foodId, ownerId);
 
   function draftOf(portion: Portion): PortionDraft {
     return drafts[portion.id] ?? toDraft(portion);

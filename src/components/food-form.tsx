@@ -360,6 +360,7 @@ export function FoodForm({ defaultValues, onSubmit, isLoading }: FoodFormProps) 
       {defaultValues ? (
         <FoodPortionsEditor
           foodId={defaultValues.id}
+          ownerId={defaultValues.user_id}
           portions={defaultValues.portions ?? []}
           baseUnit={baseUnit}
         />

@@ -36,12 +36,17 @@ export function getFoods(params: {
   return userFetch<FoodPage>(`/foods?${search}`);
 }
 
-export function getFood(id: string): Promise<Food> {
-  return userFetch<Food>(`/foods/${id}`);
+/** A path of the current user's foods, or of the owner's when the food is someone else's. */
+function foodFetch<T>(ownerId: string | undefined, path: string, options?: RequestInit): Promise<T> {
+  return ownerId ? apiFetch<T>(`/users/${ownerId}${path}`, options) : userFetch<T>(path, options);
 }
 
-export function updateFood(id: string, data: UpdateFoodRequest): Promise<Food> {
-  return userFetch<Food>(`/foods/${id}`, {
+export function getFood(id: string, ownerId?: string): Promise<Food> {
+  return foodFetch<Food>(ownerId, `/foods/${id}`);
+}
+
+export function updateFood(id: string, data: UpdateFoodRequest, ownerId?: string): Promise<Food> {
+  return foodFetch<Food>(ownerId, `/foods/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
@@ -51,8 +56,8 @@ export function deleteFood(id: string): Promise<void> {
   return userFetch<void>(`/foods/${id}`, { method: "DELETE" });
 }
 
-export function addFoodPortion(foodId: string, data: PortionRequest): Promise<Portion> {
-  return userFetch<Portion>(`/foods/${foodId}/portions`, {
+export function addFoodPortion(foodId: string, data: PortionRequest, ownerId?: string): Promise<Portion> {
+  return foodFetch<Portion>(ownerId, `/foods/${foodId}/portions`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -61,16 +66,17 @@ export function addFoodPortion(foodId: string, data: PortionRequest): Promise<Po
 export function updateFoodPortion(
   foodId: string,
   portionId: string,
-  data: UpdatePortionRequest
+  data: UpdatePortionRequest,
+  ownerId?: string,
 ): Promise<Portion> {
-  return userFetch<Portion>(`/foods/${foodId}/portions/${portionId}`, {
+  return foodFetch<Portion>(ownerId, `/foods/${foodId}/portions/${portionId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteFoodPortion(foodId: string, portionId: string): Promise<void> {
-  return userFetch<void>(`/foods/${foodId}/portions/${portionId}`, { method: "DELETE" });
+export function deleteFoodPortion(foodId: string, portionId: string, ownerId?: string): Promise<void> {
+  return foodFetch<void>(ownerId, `/foods/${foodId}/portions/${portionId}`, { method: "DELETE" });
 }
 
 /** Foods the current user can use in meals: their own, and those shared with them or with everyone. */

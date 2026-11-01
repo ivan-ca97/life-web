@@ -185,6 +185,12 @@ export function ShareDialog({
             )}
           </div>
 
+          {item && offered.some((p) => !p.read_only && selected.has(p.permission)) && (
+            <p className="text-xs text-muted-foreground">
+              Lo que esa persona cambie va a afectar a tus comidas que usan este alimento.
+            </p>
+          )}
+
           <Button
             className="w-full"
             onClick={handleShare}

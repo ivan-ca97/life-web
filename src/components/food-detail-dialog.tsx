@@ -28,10 +28,12 @@ interface FoodDetailDialogProps {
   foodId?: string;
   /** Render a food object directly without fetching (e.g. community foods). */
   food?: Food;
+  /** The owner of a food someone shared with the user. */
+  ownerId?: string;
 }
 
-export function FoodDetailDialog({ open, onOpenChange, foodId, food: foodProp }: FoodDetailDialogProps) {
-  const { data: fetchedFood, isLoading: isFetching } = useFood(foodProp ? "" : foodId ?? "");
+export function FoodDetailDialog({ open, onOpenChange, foodId, food: foodProp, ownerId }: FoodDetailDialogProps) {
+  const { data: fetchedFood, isLoading: isFetching } = useFood(foodProp ? "" : foodId ?? "", ownerId);
   const food = foodProp ?? fetchedFood;
   const isLoading = !foodProp && isFetching;
 

@@ -20,10 +20,10 @@ export function useFoods(params: {
   });
 }
 
-export function useFood(id: string) {
+export function useFood(id: string, ownerId?: string) {
   return useQuery({
-    queryKey: ["foods", id],
-    queryFn: () => foodsApi.getFood(id),
+    queryKey: ["foods", id, ownerId ?? "own"],
+    queryFn: () => foodsApi.getFood(id, ownerId),
     enabled: !!id,
   });
 }
@@ -49,10 +49,10 @@ export function useCreateFood() {
   });
 }
 
-export function useUpdateFood(id: string) {
+export function useUpdateFood(id: string, ownerId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: UpdateFoodRequest) => foodsApi.updateFood(id, data),
+    mutationFn: (data: UpdateFoodRequest) => foodsApi.updateFood(id, data, ownerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foods"] });
     },
@@ -69,31 +69,31 @@ export function useDeleteFood() {
   });
 }
 
-export function useAddFoodPortion(foodId: string) {
+export function useAddFoodPortion(foodId: string, ownerId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: PortionRequest) => foodsApi.addFoodPortion(foodId, data),
+    mutationFn: (data: PortionRequest) => foodsApi.addFoodPortion(foodId, data, ownerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foods"] });
     },
   });
 }
 
-export function useUpdateFoodPortion(foodId: string) {
+export function useUpdateFoodPortion(foodId: string, ownerId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ portionId, data }: { portionId: string; data: UpdatePortionRequest }) =>
-      foodsApi.updateFoodPortion(foodId, portionId, data),
+      foodsApi.updateFoodPortion(foodId, portionId, data, ownerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foods"] });
     },
   });
 }
 
-export function useDeleteFoodPortion(foodId: string) {
+export function useDeleteFoodPortion(foodId: string, ownerId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (portionId: string) => foodsApi.deleteFoodPortion(foodId, portionId),
+    mutationFn: (portionId: string) => foodsApi.deleteFoodPortion(foodId, portionId, ownerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foods"] });
     },
