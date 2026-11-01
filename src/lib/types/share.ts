@@ -12,6 +12,8 @@ export interface Share {
   created_at: string;
   /** Whether it grants anything now: only while the owner still holds the permission. */
   active: boolean;
+  owner_username?: string;
+  grantee_username?: string;
 }
 
 export interface CreateShareRequest {

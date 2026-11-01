@@ -201,7 +201,9 @@ export function ShareDialog({
                   <div key={s.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                     <span className="flex-1">
                       {permissionLabel(s.permission)}
-                      <span className="text-muted-foreground"> · usuario {s.grantee_id?.slice(0, 8)}</span>
+                      <span className="text-muted-foreground">
+                        {" "}· {s.grantee_username ? `@${s.grantee_username}` : "usuario sin nombre"}
+                      </span>
                       {!s.active && <span className="text-destructive"> · sin efecto</span>}
                     </span>
                     <Button

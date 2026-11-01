@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, ArrowDownToLine, ArrowUpFromLine, Share2 } from "lucide-react";
+import Link from "next/link";
+import { Trash2, ArrowDownToLine, ArrowUpFromLine, Share2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { formatAr } from "@/lib/datetime";
 import { useOwnedShares, useReceivedShares, useDeleteShare } from "@/lib/hooks/use-shares";
@@ -13,7 +14,25 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ShareDialog } from "@/components/share-dialog";
 import type { Share } from "@/lib/types/share";
 
-function ShareRow({ share, onDelete }: { share: Share; onDelete?: () => void }) {
+function who(share: Share, received: boolean): string {
+  if (received) {
+    return share.owner_username ? `de @${share.owner_username}` : "de un usuario sin nombre";
+  }
+  if (share.audience === "public") {
+    return "con todos";
+  }
+  return share.grantee_username ? `con @${share.grantee_username}` : "con un usuario sin nombre";
+}
+
+function ShareRow({
+  share,
+  received,
+  onDelete,
+}: {
+  share: Share;
+  received: boolean;
+  onDelete?: () => void;
+}) {
   return (
     <div className="flex items-center gap-4 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -22,9 +41,7 @@ function ShareRow({ share, onDelete }: { share: Share; onDelete?: () => void }) 
           <Badge variant="secondary" className="text-xs">
             {share.scope === "item" ? "Un elemento" : "Todo"}
           </Badge>
-          <Badge variant="secondary" className="text-xs">
-            {share.audience === "public" ? "Todos" : "Un usuario"}
-          </Badge>
+          <span className="text-sm">{who(share, received)}</span>
           {!share.active && (
             <Badge variant="destructive" className="text-xs">
               Sin efecto
@@ -35,6 +52,12 @@ function ShareRow({ share, onDelete }: { share: Share; onDelete?: () => void }) 
           {formatAr(share.created_at, "dd/MM/yyyy")}
         </p>
       </div>
+      {received && share.active && share.scope === "collection" && (
+        <Button variant="ghost" size="sm" render={<Link href={`/compartido/${share.owner_id}`} />}>
+          <Eye className="size-4 mr-1" />
+          Ver
+        </Button>
+      )}
       {onDelete && (
         <ConfirmDialog
           trigger={
@@ -58,6 +81,7 @@ function ShareList({
   shares,
   isLoading,
   empty,
+  received,
   onDelete,
 }: {
   title: string;
@@ -65,6 +89,7 @@ function ShareList({
   shares: Share[];
   isLoading: boolean;
   empty: string;
+  received: boolean;
   onDelete?: (id: string) => void;
 }) {
   return (
@@ -89,6 +114,7 @@ function ShareList({
             <ShareRow
               key={share.id}
               share={share}
+              received={received}
               onDelete={onDelete ? () => onDelete(share.id) : undefined}
             />
           ))}
@@ -137,6 +163,7 @@ export default function CompartirPage() {
         shares={ownedData?.items ?? []}
         isLoading={ownedLoading}
         empty="No compartiste nada todavia."
+        received={false}
         onDelete={handleDelete}
       />
       <ShareList
@@ -145,6 +172,7 @@ export default function CompartirPage() {
         shares={receivedData?.items ?? []}
         isLoading={receivedLoading}
         empty="Nadie te compartio nada todavia."
+        received
       />
     </div>
   );
