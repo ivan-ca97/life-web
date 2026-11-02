@@ -181,7 +181,7 @@ export function ShareDialog({
 
           {item && offered.some((p) => !p.read_only && selected.has(p.permission)) && (
             <p className="text-xs text-muted-foreground">
-              Lo que esa persona cambie va a afectar a tus comidas que usan este alimento.
+              Sus cambios se usan en las comidas que se carguen desde ahora; las ya registradas mantienen sus valores.
             </p>
           )}
 

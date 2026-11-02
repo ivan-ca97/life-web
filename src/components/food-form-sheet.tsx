@@ -35,7 +35,7 @@ export function FoodFormSheet({ open, onOpenChange, foodId, ownerId }: FoodFormS
           <SheetTitle>{isEdit ? "Editar alimento" : "Nuevo alimento"}</SheetTitle>
           <SheetDescription>
             {ownerId
-              ? "Es un alimento que te compartieron: los cambios afectan a su dueno y a las comidas que lo usan."
+              ? "Es un alimento que te compartieron: los cambios los ve su dueno y se usan en las comidas que se carguen desde ahora."
               : isEdit
                 ? "Modifica los datos del alimento."
                 : "Registra un alimento con sus valores nutricionales."}
