@@ -173,6 +173,7 @@ export function AiAnalyzePanel({
         default_carbs_grams: sug.create_params.default_carbs_grams ?? undefined,
         default_fat_grams: sug.create_params.default_fat_grams ?? undefined,
         default_fiber_grams: sug.create_params.default_fiber_grams ?? undefined,
+        portions: sug.create_params.portions?.length ? sug.create_params.portions : undefined,
       });
       setItems((prev) => [
         ...prev,
@@ -381,6 +382,11 @@ export function AiAnalyzePanel({
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {fmtCal(sug.create_params.default_calories ?? 0)} kcal /{" "}
                         {sug.create_params.base_quantity}{sug.create_params.base_unit}
+                        {sug.create_params.portions?.length
+                          ? ` · ${sug.create_params.portions
+                              .map((p) => `${p.name} = ${p.base_equivalent}${sug.create_params.base_unit}`)
+                              .join(", ")}`
+                          : ""}
                         {sug.assumption ? ` · ${sug.assumption}` : ""}
                       </p>
                     </div>

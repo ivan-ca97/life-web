@@ -45,6 +45,8 @@ export interface AiNewFoodCreateParams {
   default_carbs_grams?: number | null;
   default_fat_grams?: number | null;
   default_fiber_grams?: number | null;
+  /** Named portions, such as the serving a nutrition label declares, in the base unit. */
+  portions?: { name: string; base_equivalent: number }[];
 }
 
 export interface AiNewFoodSuggestion {
