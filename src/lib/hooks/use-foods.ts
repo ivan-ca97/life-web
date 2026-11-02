@@ -11,6 +11,8 @@ export function useFoods(params: {
   q?: string;
   tag?: string;
   sort?: string;
+  /** Only the foods shared with everyone, or only those that are not. */
+  public?: boolean;
   limit?: number;
   offset?: number;
 }) {

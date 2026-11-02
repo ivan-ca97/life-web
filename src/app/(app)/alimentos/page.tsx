@@ -11,6 +11,13 @@ import { ShareDialog } from "@/components/share-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -26,6 +33,12 @@ import { ApiError } from "@/lib/api/client";
 import { fmtCal } from "@/lib/format";
 import type { Food } from "@/lib/types/food";
 
+const PUBLIC_FILTERS: Record<string, { label: string; value?: boolean }> = {
+  "": { label: "Todos" },
+  public: { label: "Publicos", value: true },
+  private: { label: "No publicos", value: false },
+};
+
 function deleteErrorMessage(err: Error): string {
   if (err instanceof ApiError && err.status === 409) {
     const mealItems = err.details?.meal_items;
@@ -40,13 +53,21 @@ export default function AlimentosPage() {
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState("");
   const [sort, setSort] = useState("");
+  const [publicFilter, setPublicFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingFoodId, setEditingFoodId] = useState<string>();
   const [viewingFoodId, setViewingFoodId] = useState<string>();
   const limit = 20;
 
-  const { data, isLoading } = useFoods({ q: query, tag, sort: sort || undefined, limit, offset });
+  const { data, isLoading } = useFoods({
+    q: query,
+    tag,
+    sort: sort || undefined,
+    public: PUBLIC_FILTERS[publicFilter].value,
+    limit,
+    offset,
+  });
   const deleteMutation = useDeleteFood();
   const { data: sharesData } = useOwnedShares();
   const createShareMutation = useCreateShare();
@@ -142,8 +163,8 @@ export default function AlimentosPage() {
         </div>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder="Buscar alimentos..."
@@ -164,6 +185,24 @@ export default function AlimentosPage() {
             setOffset(0);
           }}
         />
+        <Select
+          value={publicFilter}
+          onValueChange={(v) => {
+            setPublicFilter(v ?? "");
+            setOffset(0);
+          }}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue>{PUBLIC_FILTERS[publicFilter].label}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(PUBLIC_FILTERS).map(([key, filter]) => (
+              <SelectItem key={key} value={key}>
+                {filter.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant={sort ? "secondary" : "ghost"}
           size="icon"
@@ -175,11 +214,11 @@ export default function AlimentosPage() {
         >
           <ArrowUpDown className="size-4" />
         </Button>
-        {(query || tag || sort) && (
+        {(query || tag || sort || publicFilter) && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setQuery(""); setTag(""); setSort(""); setOffset(0); }}
+            onClick={() => { setQuery(""); setTag(""); setSort(""); setPublicFilter(""); setOffset(0); }}
             title="Limpiar filtros"
           >
             <X className="size-4" />

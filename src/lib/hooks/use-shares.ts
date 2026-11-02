@@ -22,6 +22,8 @@ export function useCreateShare() {
     mutationFn: (data: CreateShareRequest) => sharesApi.createShare(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares"] });
+      // Food listings can be filtered by whether each food is public.
+      qc.invalidateQueries({ queryKey: ["foods"] });
     },
   });
 }
@@ -33,6 +35,8 @@ export function useUpdateShare() {
       sharesApi.updateShare(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares"] });
+      // Food listings can be filtered by whether each food is public.
+      qc.invalidateQueries({ queryKey: ["foods"] });
     },
   });
 }
@@ -43,6 +47,8 @@ export function useDeleteShare() {
     mutationFn: (id: string) => sharesApi.deleteShare(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares"] });
+      // Food listings can be filtered by whether each food is public.
+      qc.invalidateQueries({ queryKey: ["foods"] });
     },
   });
 }

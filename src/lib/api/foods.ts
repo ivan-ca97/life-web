@@ -24,6 +24,8 @@ export function getFoods(params: {
   q?: string;
   tag?: string;
   sort?: string;
+  /** Only the foods shared with everyone, or only those that are not. */
+  public?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<FoodPage> {
@@ -31,6 +33,7 @@ export function getFoods(params: {
   if (params.q) search.set("q", params.q);
   if (params.tag) search.set("tag", params.tag);
   if (params.sort) search.set("sort", params.sort);
+  if (params.public !== undefined) search.set("public", String(params.public));
   if (params.limit) search.set("limit", String(params.limit));
   if (params.offset) search.set("offset", String(params.offset));
   return userFetch<FoodPage>(`/foods?${search}`);
