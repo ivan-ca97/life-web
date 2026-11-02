@@ -436,7 +436,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       })),
     [items]
   );
-  const { data: preview, isFetching: previewLoading, error: previewError } = useMealPreview(previewItems);
+  const { data: preview, isFetching: previewLoading, error: previewError } = useMealPreview(previewItems, defaultValues?.id);
   const [macroOverrides, setMacroOverrides] = useState<Partial<Record<MacroField, string>>>({});
 
   function getMacroValue(field: MacroField): string {

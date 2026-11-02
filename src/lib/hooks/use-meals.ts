@@ -67,12 +67,12 @@ export function usePendingMeals(date: string) {
   });
 }
 
-export function useMealPreview(items: MealPreviewItem[]) {
+export function useMealPreview(items: MealPreviewItem[], mealId?: string) {
   const debouncedItems = useDebounce(items, 500);
 
   return useQuery({
-    queryKey: ["meals", "preview", debouncedItems],
-    queryFn: () => mealsApi.previewMealMacros({ items: debouncedItems }),
+    queryKey: ["meals", "preview", mealId, debouncedItems],
+    queryFn: () => mealsApi.previewMealMacros({ items: debouncedItems }, mealId),
     enabled: debouncedItems.length > 0,
   });
 }
