@@ -165,7 +165,7 @@ export function DraggableFoodRow({
             </Button>
           }
           title="Eliminar alimento"
-          description={`Se eliminara "${food.name}" permanentemente.`}
+          description={`Se eliminara "${food.name}". Las comidas que ya lo usan, tuyas o de otros, lo conservan.`}
           onConfirm={() => onDelete(food.id)}
           destructive
         />
