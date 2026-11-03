@@ -42,6 +42,7 @@ const CONFIDENCE_STYLE: Record<AiConfidence, string> = {
 const CONFIDENCE_LABEL: Record<AiConfidence, string> = { high: "Alta", medium: "Media", low: "Baja" };
 
 interface EditableItem {
+  seen_as?: string;
   food_id: string;
   food_name: string;
   quantity: string;
@@ -115,6 +116,7 @@ export function AiAnalyzePanel({
     setResult(res);
     setItems(
       res.matched_items.map((m) => ({
+        seen_as: m.seen_as,
         food_id: m.food_id,
         food_name: m.food_name,
         quantity: String(m.estimated_quantity),
@@ -381,6 +383,11 @@ export function AiAnalyzePanel({
                           <span className="font-medium text-sm">{it.food_name}</span>
                           <ConfidenceBadge c={it.confidence} />
                         </div>
+                        {it.seen_as && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Visto: <span className="text-foreground">{it.seen_as}</span>
+                          </p>
+                        )}
                         {it.assumption && <p className="text-xs text-muted-foreground mt-0.5">{it.assumption}</p>}
                         {it.sanity_warnings.map((w, i) => (
                           <p key={i} className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">⚠ {w}</p>
