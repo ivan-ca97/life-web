@@ -14,6 +14,8 @@ export interface EstimateMealRequest {
   instructions?: string;
   assume_only_visible?: boolean;
   corrections?: AiEstimateCorrection[];
+  /** Saved instructions chosen for this estimate; the always-on ones go without being chosen. */
+  instruction_ids?: string[];
 }
 
 export interface AiSuggestedCorrection {

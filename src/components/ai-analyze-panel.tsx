@@ -6,6 +6,7 @@ import { Sparkles, Loader2, Plus, Trash2, Info, Wand2, Check, X } from "lucide-r
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api/client";
 import { useEstimateMeal } from "@/lib/hooks/use-ai";
+import { useAiInstructions } from "@/lib/hooks/use-ai-instructions";
 import { useCreateFood } from "@/lib/hooks/use-foods";
 import { getFood, updateFood } from "@/lib/api/foods";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,9 @@ export function AiAnalyzePanel({
   const [correctingId, setCorrectingId] = useState<string | null>(null);
   const [correctedIds, setCorrectedIds] = useState<string[]>([]);
   const [instructions, setInstructions] = useState("");
+  const { data: savedData } = useAiInstructions();
+  const savedInstructions = savedData?.items ?? [];
+  const [chosenIds, setChosenIds] = useState<string[]>([]);
   const [assumeOnlyVisible, setAssumeOnlyVisible] = useState(true);
 
   const [result, setResult] = useState<EstimateMealResponse | null>(null);
@@ -148,6 +152,7 @@ export function AiAnalyzePanel({
         instructions: instructions.trim() || undefined,
         assume_only_visible: assumeOnlyVisible,
         corrections: withCorrections.length > 0 ? withCorrections : undefined,
+        instruction_ids: chosenIds.length > 0 ? chosenIds : undefined,
       },
       {
         onSuccess: (res) => applyResult(res),
@@ -275,6 +280,36 @@ export function AiAnalyzePanel({
 
       {!result ? (
         <div className="space-y-3">
+          {savedInstructions.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Tus indicaciones</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {savedInstructions.map((saved) => {
+                  // The always-on ones go anyway; they are changed in the assistant settings.
+                  const active = saved.always_on || chosenIds.includes(saved.id);
+                  return (
+                    <button
+                      key={saved.id}
+                      type="button"
+                      title={saved.always_on ? `${saved.text} (siempre activa)` : saved.text}
+                      disabled={saved.always_on}
+                      onClick={() =>
+                        setChosenIds((prev) =>
+                          prev.includes(saved.id) ? prev.filter((id) => id !== saved.id) : [...prev, saved.id],
+                        )
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs ${
+                        active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"
+                      } ${saved.always_on ? "cursor-default opacity-80" : ""}`}
+                    >
+                      {saved.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="ai-instructions">Instrucciones (opcional)</Label>
             <Textarea
