@@ -22,6 +22,7 @@ import type {
   AiEstimateCorrection,
   AiNewFoodSuggestion,
   AiSuggestedCorrection,
+  AiTotals,
   EstimateMealResponse,
 } from "@/lib/types/ai";
 
@@ -49,6 +50,27 @@ interface EditableItem {
   sanity_warnings: string[];
   suggested_correction?: AiSuggestedCorrection;
   include: boolean;
+  /** What estimated_quantity provides, to recompute the total when the quantity changes. */
+  nutrition?: AiTotals;
+  estimated_quantity: number;
+}
+
+/**
+ * The total of what is going to be added: the included items at their current quantity.
+ * It matches the logged meal, which uses the same catalog values.
+ */
+function selectedTotals(items: EditableItem[]): AiTotals {
+  const totals: AiTotals = { calories: 0, protein_grams: 0, carbs_grams: 0, fat_grams: 0, fiber_grams: 0 };
+  for (const item of items) {
+    if (!item.include || !item.nutrition || !(item.estimated_quantity > 0)) continue;
+    const ratio = (parseFloat(item.quantity) || 0) / item.estimated_quantity;
+    totals.calories += item.nutrition.calories * ratio;
+    totals.protein_grams += item.nutrition.protein_grams * ratio;
+    totals.carbs_grams += item.nutrition.carbs_grams * ratio;
+    totals.fat_grams += item.nutrition.fat_grams * ratio;
+    totals.fiber_grams += item.nutrition.fiber_grams * ratio;
+  }
+  return totals;
 }
 
 function ConfidenceBadge({ c }: { c: AiConfidence }) {
@@ -83,6 +105,8 @@ export function AiAnalyzePanel({
 
   const hadPhotos = photoUrls.length > 0;
 
+  const totals = selectedTotals(items);
+
   function applyResult(res: EstimateMealResponse) {
     setResult(res);
     setItems(
@@ -96,6 +120,8 @@ export function AiAnalyzePanel({
         sanity_warnings: m.sanity_warnings ?? [],
         suggested_correction: m.suggested_correction,
         include: true,
+        nutrition: m.nutrition,
+        estimated_quantity: m.estimated_quantity,
       }))
     );
     setSuggestions(res.new_food_suggestions ?? []);
@@ -186,6 +212,8 @@ export function AiAnalyzePanel({
           assumption: sug.assumption,
           sanity_warnings: [],
           include: true,
+          nutrition: sug.nutrition,
+          estimated_quantity: sug.estimated_quantity,
         },
       ]);
       setSuggestions((prev) => prev.filter((_, i) => i !== idx));
@@ -408,11 +436,12 @@ export function AiAnalyzePanel({
           )}
 
           <div className="rounded-md bg-muted/50 p-3 text-sm">
-            <div className="font-medium">{fmtCal(result.totals.calories)} kcal</div>
+            <div className="font-medium">{fmtCal(totals.calories)} kcal</div>
             <div className="text-xs text-muted-foreground tabular-nums">
-              P {fmtGrams(result.totals.protein_grams)} · C {fmtGrams(result.totals.carbs_grams)} ·{" "}
-              G {fmtGrams(result.totals.fat_grams)} · F {fmtGrams(result.totals.fiber_grams)}
+              P {fmtGrams(totals.protein_grams)} · C {fmtGrams(totals.carbs_grams)} ·{" "}
+              G {fmtGrams(totals.fat_grams)} · F {fmtGrams(totals.fiber_grams)}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">Lo seleccionado. Las sugerencias suman al crearlas.</p>
           </div>
 
           <Separator />

@@ -34,6 +34,8 @@ export interface AiMatchedItem {
   assumption: string;
   sanity_warnings: string[];
   suggested_correction?: AiSuggestedCorrection;
+  /** What the estimated quantity provides with the catalog values (or the suggested ones). */
+  nutrition?: AiTotals;
 }
 
 export interface AiNewFoodCreateParams {
@@ -56,6 +58,8 @@ export interface AiNewFoodSuggestion {
   confidence: AiConfidence;
   assumption: string;
   create_params: AiNewFoodCreateParams;
+  /** What the estimated quantity provides with the catalog values (or the suggested ones). */
+  nutrition?: AiTotals;
 }
 
 export interface AiTotals {
