@@ -346,35 +346,23 @@ export default function ResumenPage() {
                       </Card>
                     );
                   })()}
-                  {data.estimated_bmr != null && (() => {
-                    const stepsCal = data.steps_calories_burned ?? 0;
-                    return (
-                      <SummaryCard
-                        icon={<Flame className="size-5" />}
-                        label="Gasto total"
-                        value={(data.estimated_bmr + data.exercise.total_calories_burned + stepsCal).toFixed(0)}
-                        unit="kcal"
-                      />
-                    );
-                  })()}
+                  {data.estimated_bmr != null && (
+                    <SummaryCard
+                      icon={<Flame className="size-5" />}
+                      label="Gasto total"
+                      value={(data.estimated_bmr + data.exercise.total_calories_burned).toFixed(0)}
+                      unit="kcal"
+                    />
+                  )}
                 </div>
-                {data.steps_calories_burned != null && data.steps_calories_burned > 0 && (
-                  <SummaryCard
-                    icon={<Footprints className="size-5" />}
-                    label="Calorias por pasos"
-                    value={data.steps_calories_burned.toFixed(0)}
-                    unit="kcal"
-                    className="mt-4"
-                  />
-                )}
                 {data.caloric_balance != null && data.estimated_bmr != null && (() => {
-                  const stepsCal = data.steps_calories_burned ?? 0;
+                  // The exercise calories already include those of walking: each exercise counts
+                  // its logged calories, or an estimate from its steps or duration.
                   const parts = [
                     `consumidas (${data.meals.total_calories.toFixed(0)})`,
                     `BMR (${data.estimated_bmr.toFixed(0)})`,
                     `ejercicio (${data.exercise.total_calories_burned.toFixed(0)})`,
                   ];
-                  if (stepsCal > 0) parts.push(`pasos (${stepsCal.toFixed(0)})`);
                   return (
                     <p className="text-xs text-muted-foreground mt-3">
                       Balance = {parts[0]} − {parts.slice(1).join(" − ")}

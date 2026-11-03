@@ -15,7 +15,12 @@ export interface Exercise {
   name: string;
   started_at?: string;
   duration_seconds?: number;
+  /** Calories logged by hand; absent when none were logged. */
   estimated_calories_burned?: number;
+  /** The calories counted for the exercise: the logged ones, or an estimate from steps or duration. */
+  calories_burned?: number;
+  /** Whether calories_burned is an estimate rather than logged. */
+  calories_estimated?: boolean;
   steps?: number;
   distance_meters?: number;
   average_speed_kmh?: number;

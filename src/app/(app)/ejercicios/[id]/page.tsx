@@ -108,10 +108,14 @@ export default function EjercicioDetallePage({
                 {fmtDuration(exercise.duration_seconds)}
               </div>
             )}
-            {exercise.estimated_calories_burned != null && (
+            {exercise.calories_burned != null && (
               <div>
                 <span className="text-muted-foreground">Calorias:</span>{" "}
-                {fmtCal(exercise.estimated_calories_burned)} kcal
+                {exercise.calories_estimated ? "≈" : ""}
+                {fmtCal(exercise.calories_burned)} kcal
+                {exercise.calories_estimated && (
+                  <span className="text-muted-foreground"> (estimadas por {exercise.steps ? "pasos" : "duracion"})</span>
+                )}
               </div>
             )}
             {exercise.steps != null && (

@@ -102,7 +102,8 @@ export default function EjerciciosPage() {
                     {(() => {
                       const parts: string[] = [];
                       if (exercise.duration_seconds != null) parts.push(fmtDuration(exercise.duration_seconds));
-                      if (exercise.estimated_calories_burned != null) parts.push(`${fmtCal(exercise.estimated_calories_burned)} kcal`);
+                      if (exercise.calories_burned != null)
+                        parts.push(`${exercise.calories_estimated ? "≈" : ""}${fmtCal(exercise.calories_burned)} kcal`);
                       if (exercise.distance_meters != null) parts.push(`${(exercise.distance_meters / 1000).toFixed(2)} km`);
                       if (exercise.steps != null) parts.push(`${exercise.steps.toLocaleString()} pasos`);
                       if (exercise.total_volume_kg != null) parts.push(`${exercise.total_volume_kg.toLocaleString()} kg vol`);
