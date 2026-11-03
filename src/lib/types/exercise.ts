@@ -72,16 +72,21 @@ export interface CalorieEstimateResponse {
   weight_kg: number;
 }
 
-export interface ImportResultItem {
-  date: string;
-  name: string;
-  status: "created" | "skipped" | "blocked";
-  reason?: string;
-}
+/** What applying a workout from Hevy would do. */
+export type HevyProposalKind = "create" | "update" | "unchanged";
 
-export interface ImportResponse {
-  created: number;
-  skipped: number;
-  blocked: number;
-  results: ImportResultItem[];
+/** A workout from the Hevy file and what it would change. Sent back as is, it is applied. */
+export interface HevyProposal {
+  kind: HevyProposalKind;
+  /** The workout that would be completed; absent when one would be created. */
+  exercise_id?: string;
+  date: string;
+  title: string;
+  started_at: string;
+  duration_seconds: number;
+  total_sets: number;
+  total_volume_kg?: number;
+  notes: string;
+  /** What the existing workout has now, to compare. */
+  current_notes?: string;
 }

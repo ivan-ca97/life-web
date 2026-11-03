@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as exercisesApi from "@/lib/api/exercises";
+import type { HevyProposal } from "@/lib/types/exercise";
 import { useDebounce } from "@/hooks/use-debounce";
 import type {
   CreateExerciseRequest,
@@ -70,10 +71,10 @@ export function useCalorieEstimate(steps: number) {
   });
 }
 
-export function useImportHevyCsv() {
+export function useApplyHevyProposal() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (file: File) => exercisesApi.importHevyCsv(file),
+    mutationFn: (proposal: HevyProposal) => exercisesApi.applyHevyProposal(proposal),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["exercises"] });
       queryClient.invalidateQueries({ queryKey: ["daily"] });

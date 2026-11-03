@@ -6,7 +6,7 @@ import type {
   UpdateExerciseRequest,
   CalorieEstimateRequest,
   CalorieEstimateResponse,
-  ImportResponse,
+  HevyProposal,
 } from "@/lib/types/exercise";
 
 export function createExercise(data: CreateExerciseRequest): Promise<Exercise> {
@@ -53,11 +53,20 @@ export function estimateCalories(data: CalorieEstimateRequest): Promise<CalorieE
   });
 }
 
-export function importHevyCsv(file: File): Promise<ImportResponse> {
+/** Reads a Hevy export and says what each workout would change, most recent first, changing nothing. */
+export function previewHevyCsv(file: File): Promise<{ items: HevyProposal[] }> {
   const formData = new FormData();
   formData.append("file", file);
-  return userFetch<ImportResponse>("/exercises/import/hevy", {
+  return userFetch<{ items: HevyProposal[] }>("/exercises/import/hevy/preview", {
     method: "POST",
     body: formData,
+  });
+}
+
+/** Creates or completes one workout, as its proposal says. */
+export function applyHevyProposal(proposal: HevyProposal): Promise<{ exercise_id: string }> {
+  return userFetch<{ exercise_id: string }>("/exercises/import/hevy/apply", {
+    method: "POST",
+    body: JSON.stringify(proposal),
   });
 }

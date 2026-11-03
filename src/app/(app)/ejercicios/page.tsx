@@ -16,7 +16,6 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ListSkeleton } from "@/components/loading-skeleton";
 import { ExerciseFormSheet } from "@/components/exercise-form-sheet";
-import { HevyImportDialog } from "@/components/hevy-import-dialog";
 import { fmtCal, fmtDuration } from "@/lib/format";
 
 const typeLabels: Record<string, string> = {
@@ -34,7 +33,6 @@ export default function EjerciciosPage() {
 
   useEffect(() => { setOffset(0); }, [date]);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const limit = 20;
 
   const { data, isLoading } = useExercises({ date, limit, offset });
@@ -53,7 +51,7 @@ export default function EjerciciosPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Ejercicios</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <Button variant="outline" render={<Link href="/ejercicios/importar-hevy" />}>
             <Upload className="size-4 mr-1" />
             Importar
           </Button>
@@ -153,7 +151,6 @@ export default function EjerciciosPage() {
         </>
       )}
       <ExerciseFormSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-      <HevyImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
