@@ -39,6 +39,10 @@ export interface DailySummary {
   weight?: WeightSummary;
   goals?: GoalsSummary;
   estimated_bmr?: number;
+  /** The part of the basal metabolism already inside the exercise calories. */
+  basal_in_exercise?: number;
+  /** Basal metabolism plus exercise, counting that part once. */
+  total_burned?: number;
   caloric_balance?: number;
 }
 
