@@ -476,6 +476,7 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
     setValue,
     watch,
     clearErrors,
+    getFieldState,
     formState: { errors },
   } = useForm<MealFormValues>({
     defaultValues: {
@@ -488,6 +489,17 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
       notes: defaultValues?.notes ?? "",
     },
   });
+
+  // The form stays mounted while its sheet is closed, so a new meal follows the
+  // day chosen in the app until the user picks a date or a time themselves.
+  const followsGlobalDate = !defaultValues?.date;
+  useEffect(() => {
+    if (!followsGlobalDate) return;
+    if (!getFieldState("date").isDirty) setValue("date", globalDate);
+    if (!getFieldState("eaten_time").isDirty) {
+      setValue("eaten_time", globalDate === todayAr() ? formatAr(new Date(), "HH:mm") : "00:00");
+    }
+  }, [globalDate, followsGlobalDate, getFieldState, setValue]);
 
   /* --- Photo handlers --- */
 
@@ -865,13 +877,13 @@ export function MealForm({ defaultValues, onSubmit, isLoading }: MealFormProps) 
                   size="sm"
                   className="ml-auto h-7 text-xs"
                   onClick={() => {
-                    setValue("eaten_time", timeSuggestion.time);
+                    setValue("eaten_time", timeSuggestion.time, { shouldDirty: true });
                     if (isNextDay) {
                       setDayOffset(1);
                     } else if (isSameDay) {
                       setDayOffset(0);
                     } else if (isEditing) {
-                      setValue("date", photoDate);
+                      setValue("date", photoDate, { shouldDirty: true });
                       setDayOffset(0);
                     }
                     setTimeSuggestion(null);
