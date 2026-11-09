@@ -7,6 +7,8 @@ import { MealEditSheet } from "@/components/meal-edit-sheet";
 import { fmtCal, fmtGrams } from "@/lib/format";
 import { getMethodMeta } from "@/lib/measurement-method";
 import { MacroBar } from "@/components/macro-bar";
+import { AgentBadge } from "@/components/agent-badge";
+import { useAgentMarks } from "@/lib/hooks/use-agent-marks";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ImageIcon, Pencil } from "lucide-react";
@@ -28,6 +30,8 @@ interface MealDetailDialogProps {
 
 export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialogProps) {
   const { data: meal, isLoading } = useMeal(mealId);
+  const mealIds = useMemo(() => [mealId], [mealId]);
+  const agentMark = useAgentMarks("meals", "meal", mealIds).get(mealId);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -100,6 +104,7 @@ export function MealDetailDialog({ open, onOpenChange, mealId }: MealDetailDialo
                     )}
                   </span>
                 )}
+                {agentMark && <AgentBadge mark={agentMark} />}
                 <button
                   type="button"
                   className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-1"

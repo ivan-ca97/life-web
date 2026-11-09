@@ -22,6 +22,8 @@ import { DailyBreakdownDialog } from "@/components/daily-breakdown-dialog";
 import { SummaryCard } from "@/components/summary-card";
 import { MacroBar } from "@/components/macro-bar";
 import { fmtCal, fmtGrams } from "@/lib/format";
+import { AgentBadge } from "@/components/agent-badge";
+import { useAgentMarks } from "@/lib/hooks/use-agent-marks";
 
 export default function ComidasPage() {
   const { date } = useDate();
@@ -39,6 +41,8 @@ export default function ComidasPage() {
   const { data: summary } = useDailySummary(date);
   const deleteMutation = useDeleteMeal();
   const pendingCount = pendingData?.items.length ?? 0;
+  const mealIds = useMemo(() => data?.items.map((m) => m.id) ?? [], [data]);
+  const agentMarks = useAgentMarks("meals", "meal", mealIds);
 
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
@@ -167,6 +171,7 @@ export default function ComidasPage() {
                         </span>
                       )}
                       <span className="font-medium">{meal.name}</span>
+                      {agentMarks.get(meal.id) && <AgentBadge mark={agentMarks.get(meal.id)!} />}
                       {meal.tags.map((t) => (
                         <Badge key={t} variant="secondary" className="text-xs">
                           {t}
