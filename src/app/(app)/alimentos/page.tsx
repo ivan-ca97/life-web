@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragStartEvent, type DragEndEvent } from "@dnd-kit/core";
 import { Plus, Search, UtensilsCrossed, X, ArrowUpDown, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFoods, useDeleteFood } from "@/lib/hooks/use-foods";
@@ -83,6 +83,11 @@ export default function AlimentosPage() {
     );
   }
   const builder = useMealBuilder();
+  // A drag starts only after the pointer moves, so a click on a row's buttons
+  // is a click and does not open the builder.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
   const isMobile = useIsMobile();
   const [activeDragFood, setActiveDragFood] = useState<Food | null>(null);
 
@@ -258,7 +263,7 @@ export default function AlimentosPage() {
   );
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-6">
         {/* Food list - main content stays in place */}
         {foodList}
